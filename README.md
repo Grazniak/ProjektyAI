@@ -5,7 +5,8 @@ Małe aplikacje tworzone z pomocą AI na własne potrzeby. Każda działa w prze
 | Aplikacja | Opis |
 |---|---|
 | [Włoski krok po kroku](wloski/) | Nauka włoskiego i angielskiego dla Polaków: lekcje, powtórki, testy, statystyki postępów. Postępy zapisują się w przeglądarce. |
-| [Moje Przepisy (demo)](przepisy/) | Baza przepisów kulinarnych: kategorie, przeliczanie porcji, tryb gotowania, zdjęcia. Aplikacja mobilna (PWA). |
+| [Moje Przepisy (demo)](przepisy/) | Baza przepisów kulinarnych: przeliczanie porcji, tryb gotowania, plan posiłków, lista zakupów, praca offline. Aplikacja mobilna (PWA). |
+| [CRM – baza klientów (demo)](crm/) | CRM do pracy w terenie: klienci, historia wizyt, przypomnienia, raporty, mapa, import i eksport danych. |
 | [Mój parkiet (demo)](mojparkiet/) | Śledzenie spółek z GPW: portfel, dywidendy, wiadomości, raporty AI. |
 
 Aplikacje powstały we współpracy z asystentem AI (Claude). Pomysły, wymagania i testowanie są moje, kod został wygenerowany i dopracowany w rozmowie z AI.

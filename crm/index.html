@@ -1,0 +1,1974 @@
+<!DOCTYPE html>
+<html lang="pl">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
+<title>CRM — Moja Baza Klientów (demo)</title>
+<script src="https://cdn.tailwindcss.com"></script>
+<script src="https://cdn.sheetjs.com/xlsx-0.20.3/package/dist/xlsx.full.min.js"></script>
+<link rel="stylesheet" href="https://unpkg.com/leaflet@1.9.4/dist/leaflet.css"/>
+<script src="https://unpkg.com/leaflet@1.9.4/dist/leaflet.js"></script>
+<style>
+  /* MAP - explicit pixel height set by JS, Safari requires this */
+  #map-container { width: 100%; background: #e8e8e8; }
+  .leaflet-popup-content { font-family: -apple-system, BlinkMacSystemFont, 'Segoe UI', sans-serif; font-size: 0.875rem; min-width: 190px; }
+  .leaflet-popup-content b { font-size: 0.95rem; display:block; margin-bottom:0.25rem; }
+  .map-legend { position: absolute; bottom: 2rem; left: 1rem; z-index: 1000; background: white; border-radius: 10px; padding: 0.75rem 1rem; box-shadow: 0 2px 12px rgba(0,0,0,0.15); font-size: 0.8rem; pointer-events: none; }
+  .map-legend-row { display: flex; align-items: center; gap: 0.5rem; margin-bottom: 0.3rem; }
+  .map-legend-dot { width: 13px; height: 13px; border-radius: 50%; flex-shrink: 0; border: 2px solid rgba(0,0,0,0.2); }
+  /* NAV mobile scroll */
+  nav { background: var(--ink, #1a1a2e); padding: 0 1rem; display: flex; align-items: center; gap: 0.25rem; height: 56px; overflow-x: auto; -webkit-overflow-scrolling: touch; scrollbar-width: none; flex-shrink: 0; }
+  nav::-webkit-scrollbar { display: none; }
+  nav .logo { color: #fff; font-weight: 700; font-size: 1rem; letter-spacing: -0.02em; margin-right: 0.5rem; white-space: nowrap; flex-shrink: 0; }
+  nav button { color: #9ca3af; background: none; border: none; padding: 0.4rem 0.65rem; border-radius: 6px; cursor: pointer; font-size: 0.8rem; transition: all 0.15s; white-space: nowrap; flex-shrink: 0; }
+  nav button.active, nav button:hover { color: #fff; background: rgba(255,255,255,0.1); }
+  /* TABLE wrapper for horizontal scroll on mobile */
+  .table-scroll { overflow-x: auto; -webkit-overflow-scrolling: touch; }
+  th.sortable { cursor: pointer; user-select: none; }
+  th.sortable:hover { background: #f0f0f0; }
+  th.sort-asc::after  { content: ' ▲'; font-size: 0.65rem; color: var(--accent); }
+  th.sort-desc::after { content: ' ▼'; font-size: 0.65rem; color: var(--accent); }
+  /* CLIENT CARDS for mobile */
+  .client-card { background: var(--surface, #fff); border: 1px solid var(--border, #e5e7eb); border-radius: 10px; padding: 1rem; margin-bottom: 0.75rem; }
+  .client-card-header { display: flex; align-items: flex-start; justify-content: space-between; gap: 0.5rem; margin-bottom: 0.5rem; }
+  .client-card-name { font-weight: 700; font-size: 0.95rem; }
+  .client-card-row { font-size: 0.82rem; color: var(--muted, #6b7280); margin-top: 0.25rem; display: flex; align-items: center; gap: 0.4rem; flex-wrap: wrap; }
+  .client-card-actions { display: flex; gap: 0.4rem; margin-top: 0.65rem; flex-wrap: wrap; }
+</style>
+<style>
+  /* Fallback styles when Tailwind CDN is unavailable (offline) */
+  :root {
+    --ink: #1a1a2e;
+    --slate: #374151;
+    --muted: #6b7280;
+    --border: #e5e7eb;
+    --bg: #f8fafc;
+    --surface: #ffffff;
+    --accent: #4f46e5;
+    --accent-light: #eef2ff;
+    --green: #059669;
+    --green-light: #d1fae5;
+    --amber: #d97706;
+    --amber-light: #fef3c7;
+    --red: #dc2626;
+    --red-light: #fee2e2;
+    --blue: #2563eb;
+    --blue-light: #dbeafe;
+    --radius: 10px;
+    --shadow: 0 1px 3px rgba(0,0,0,0.08), 0 1px 2px rgba(0,0,0,0.06);
+    --shadow-md: 0 4px 6px rgba(0,0,0,0.07), 0 2px 4px rgba(0,0,0,0.06);
+  }
+  * { box-sizing: border-box; margin: 0; padding: 0; }
+  body { font-family: -apple-system, BlinkMacSystemFont, 'Segoe UI', sans-serif; background: var(--bg); color: var(--ink); min-height: 100vh; }
+
+  /* Nav - defined in top style block */
+
+  /* Layout fallback */
+  .page { display: none; max-width: 1100px; margin: 0 auto; padding: 2rem 1.5rem; }
+  .page.active { display: block; }
+  .page.full-width { max-width: none; padding: 0; margin: 0; }
+  .card { background: var(--surface); border-radius: var(--radius); border: 1px solid var(--border); box-shadow: var(--shadow); padding: 1.5rem; margin-bottom: 1.5rem; }
+  h2 { font-size: 1.25rem; font-weight: 700; color: var(--ink); margin-bottom: 1rem; }
+  h3 { font-size: 1rem; font-weight: 600; }
+  label { display: block; font-size: 0.8125rem; font-weight: 500; color: var(--slate); margin-bottom: 0.35rem; }
+  input, select, textarea { width: 100%; padding: 0.6rem 0.75rem; border: 1px solid var(--border); border-radius: 7px; font-size: 0.875rem; color: var(--ink); background: var(--surface); outline: none; font-family: inherit; transition: border-color 0.15s; }
+  input:focus, select:focus, textarea:focus { border-color: var(--accent); box-shadow: 0 0 0 3px rgba(79,70,229,0.12); }
+  textarea { resize: vertical; min-height: 80px; }
+  .grid-2 { display: grid; grid-template-columns: 1fr 1fr; gap: 1rem; }
+  .grid-3 { display: grid; grid-template-columns: 1fr 1fr 1fr; gap: 1rem; }
+  @media (max-width: 640px) { .grid-2, .grid-3 { grid-template-columns: 1fr; } }
+  .form-group { margin-bottom: 1rem; }
+  .btn { display: inline-flex; align-items: center; gap: 0.4rem; padding: 0.55rem 1.1rem; border-radius: 7px; font-size: 0.875rem; font-weight: 500; cursor: pointer; border: none; transition: all 0.15s; }
+  .btn-primary { background: var(--accent); color: #fff; }
+  .btn-primary:hover { background: #4338ca; }
+  .btn-secondary { background: var(--bg); color: var(--slate); border: 1px solid var(--border); }
+  .btn-secondary:hover { background: var(--border); }
+  .btn-danger { background: var(--red-light); color: var(--red); }
+  .btn-danger:hover { background: #fca5a5; }
+  .btn-green { background: var(--green); color: #fff; }
+  .btn-green:hover { background: #047857; }
+  .btn-amber { background: var(--amber); color: #fff; }
+  .btn-amber:hover { background: #b45309; }
+  .actions { display: flex; gap: 0.5rem; flex-wrap: wrap; margin-top: 0.5rem; }
+  table { width: 100%; border-collapse: collapse; font-size: 0.875rem; }
+  th { text-align: left; padding: 0.65rem 0.75rem; font-size: 0.75rem; font-weight: 600; text-transform: uppercase; letter-spacing: 0.05em; color: var(--muted); border-bottom: 1px solid var(--border); background: var(--bg); }
+  td { padding: 0.75rem; border-bottom: 1px solid var(--border); vertical-align: top; }
+  tr:last-child td { border-bottom: none; }
+  tr:hover td { background: #fafafa; }
+  .badge { display: inline-block; padding: 0.2rem 0.6rem; border-radius: 999px; font-size: 0.75rem; font-weight: 600; }
+  .badge-new { background: var(--blue-light); color: var(--blue); }
+  .badge-contact { background: var(--amber-light); color: var(--amber); }
+  .badge-closed { background: var(--red-light); color: var(--red); }
+  .badge-regular { background: #dcfce7; color: #15803d; }
+  .badge-lead { background: #ede9fe; color: #7c3aed; }
+  .badge-waiting { background: #f1f5f9; color: #64748b; border: 1px solid #cbd5e1; }
+  .badge-lost { background: var(--red-light); color: var(--red); }
+  .badge-today { background: var(--red); color: #fff; }
+  .badge-soon { background: var(--amber-light); color: var(--amber); }
+  .empty { text-align: center; padding: 3rem 1rem; color: var(--muted); }
+  .empty-icon { font-size: 2.5rem; margin-bottom: 0.75rem; }
+  .search-bar { display: flex; gap: 0.75rem; margin-bottom: 1.25rem; flex-wrap: wrap; }
+  .search-bar input { max-width: 280px; }
+  .search-bar select { max-width: 180px; }
+  .stat-grid { display: grid; grid-template-columns: repeat(4, 1fr); gap: 1rem; margin-bottom: 1.5rem; }
+  @media (max-width: 800px) { .stat-grid { grid-template-columns: 1fr 1fr; } }
+  .stat { background: var(--surface); border: 1px solid var(--border); border-radius: var(--radius); padding: 1rem 1.25rem; box-shadow: var(--shadow); }
+  .stat-num { font-size: 1.75rem; font-weight: 800; letter-spacing: -0.03em; }
+  .stat-label { font-size: 0.8rem; color: var(--muted); margin-top: 0.15rem; }
+  .reminder-card { border-left: 4px solid var(--red); padding: 1rem 1.25rem; background: var(--surface); border-radius: 0 var(--radius) var(--radius) 0; box-shadow: var(--shadow); margin-bottom: 0.75rem; display: flex; align-items: flex-start; justify-content: space-between; gap: 1rem; flex-wrap: wrap; }
+  .reminder-card.soon { border-left-color: var(--amber); }
+  .reminder-card.future { border-left-color: var(--accent); }
+  .modal-overlay { display: none; position: fixed; inset: 0; background: rgba(0,0,0,0.45); z-index: 100; align-items: center; justify-content: center; padding: 1rem; }
+  .modal-overlay.open { display: flex; }
+  .modal { background: var(--surface); border-radius: 14px; max-width: 640px; width: 100%; max-height: 90vh; overflow-y: auto; box-shadow: 0 20px 60px rgba(0,0,0,0.2); }
+  .modal-header { padding: 1.25rem 1.5rem; border-bottom: 1px solid var(--border); display: flex; align-items: center; justify-content: space-between; position: sticky; top: 0; background: var(--surface); border-radius: 14px 14px 0 0; }
+  .modal-body { padding: 1.5rem; }
+  .modal-footer { padding: 1rem 1.5rem; border-top: 1px solid var(--border); display: flex; justify-content: flex-end; gap: 0.75rem; background: var(--bg); border-radius: 0 0 14px 14px; }
+  .close-btn { background: none; border: none; font-size: 1.25rem; cursor: pointer; color: var(--muted); line-height: 1; padding: 0.25rem; border-radius: 4px; }
+  .close-btn:hover { color: var(--ink); background: var(--bg); }
+  .toast { position: fixed; bottom: 1.5rem; right: 1.5rem; background: var(--ink); color: #fff; padding: 0.75rem 1.25rem; border-radius: 8px; font-size: 0.875rem; z-index: 999; opacity: 0; transform: translateY(8px); transition: all 0.2s; pointer-events: none; }
+  .toast.show { opacity: 1; transform: translateY(0); }
+  .section-title { font-size: 0.7rem; font-weight: 700; text-transform: uppercase; letter-spacing: 0.08em; color: var(--muted); margin-bottom: 0.75rem; padding-bottom: 0.5rem; border-bottom: 1px solid var(--border); }
+  .visit-entry { border-left: 3px solid var(--border); padding: 0.5rem 0.75rem; margin-bottom: 0.5rem; border-radius: 0 6px 6px 0; background: var(--bg); }
+  .visit-entry.latest { border-left-color: var(--accent); background: var(--accent-light); }
+  .visit-date { font-size: 0.78rem; font-weight: 700; color: var(--slate); margin-bottom: 0.15rem; }
+  .visit-comment { font-size: 0.83rem; color: var(--ink); }
+  .visit-comment-empty { font-size: 0.83rem; color: var(--muted); font-style: italic; }
+  @media (max-width: 680px) { .report-grid { grid-template-columns: 1fr !important; } }
+</style>
+</head>
+<body>
+
+<!-- NAV -->
+<nav>
+  <span class="logo">📋 CRM</span>
+  <button onclick="showPage('dashboard')" id="nav-dashboard" class="active">Pulpit</button>
+  <button onclick="showPage('clients')" id="nav-clients">Klienci</button>
+  <button onclick="showPage('reminders')" id="nav-reminders">Przypomnienia</button>
+  <button onclick="showPage('reports')" id="nav-reports">📈 Raporty</button>
+  <button onclick="showPage('map')" id="nav-map">🗺 Mapa</button>
+  <button onclick="showPage('data')" id="nav-data">Dane</button>
+</nav>
+
+<!-- TOAST -->
+<div class="toast" id="toast"></div>
+
+<!-- MODAL -->
+<div class="modal-overlay" id="modal">
+  <div class="modal">
+    <div class="modal-header">
+      <h3 id="modal-title">Klient</h3>
+      <button class="close-btn" onclick="closeModal()">✕</button>
+    </div>
+    <div class="modal-body" id="modal-body"></div>
+    <div class="modal-footer" id="modal-footer"></div>
+  </div>
+</div>
+
+<!-- HISTORY MODAL -->
+<div class="modal-overlay" id="history-modal">
+  <div class="modal" style="max-width:520px;">
+    <div class="modal-header">
+      <div>
+        <h3 id="history-modal-title">Historia wizyt</h3>
+        <div id="history-modal-sub" style="font-size:0.8rem;color:var(--muted);margin-top:0.1rem;"></div>
+      </div>
+      <button class="close-btn" onclick="closeHistoryModal()">✕</button>
+    </div>
+    <div class="modal-body" id="history-modal-body"></div>
+    <div class="modal-footer">
+      <button class="btn btn-secondary" onclick="closeHistoryModal()">Zamknij</button>
+      <button class="btn btn-primary" id="history-edit-btn">✏️ Edytuj klienta</button>
+    </div>
+  </div>
+</div>
+
+<!-- DASHBOARD -->
+<div class="page active" id="page-dashboard">
+  <div style="margin-bottom:1.5rem;">
+    <h2 style="font-size:1.5rem;margin-bottom:0.25rem;">Dzień dobry! 👋</h2>
+    <p style="color:var(--muted);font-size:0.9rem;" id="today-date"></p>
+  </div>
+  <div class="stat-grid" id="stats"></div>
+  <div class="card">
+    <div class="section-title">Aktywni klienci bez kontaktu od ponad 2 tygodni</div>
+    <div id="dashboard-reminders"></div>
+  </div>
+  <div class="card">
+    <div class="section-title">Ostatnio dodani klienci</div>
+    <div id="recent-clients"></div>
+  </div>
+</div>
+
+<!-- CLIENTS -->
+<div class="page" id="page-clients">
+  <div style="display:flex;align-items:center;justify-content:space-between;margin-bottom:1.25rem;flex-wrap:wrap;gap:0.75rem;">
+    <h2 style="margin:0;">Klienci</h2>
+    <button class="btn btn-primary" onclick="openAddModal()">＋ Dodaj klienta</button>
+  </div>
+  <div class="search-bar">
+    <input type="text" id="search-input" placeholder="🔍 Szukaj po nazwie, e-mail, telefonie..." oninput="renderClients()">
+    <select id="filter-status" onchange="renderClients()">
+      <option value="">Wszystkie statusy</option>
+      <option value="Nowy">Nowy</option>
+      <option value="Lead">Lead</option>
+      <option value="W trakcie">W trakcie</option>
+      <option value="Oczekujący">Oczekujący</option>
+      <option value="Stały klient">Stały klient</option>
+      <option value="Zamknięty">Zamknięty</option>
+    </select>
+  </div>
+  <div class="card" style="padding:0;overflow:hidden;">
+    <div class="table-scroll" id="clients-table"></div>
+  </div>
+</div>
+
+<!-- REMINDERS -->
+<div class="page" id="page-reminders">
+  <h2 style="margin-bottom:0.4rem;">Przypomnienia</h2>
+  <p style="color:var(--muted);font-size:0.875rem;margin-bottom:1.25rem;">Aktywni klienci (Nowy, W trakcie, Stały klient) posortowani wg czasu od ostatniej wizyty.</p>
+  <div style="display:flex;gap:1rem;margin-bottom:1.5rem;flex-wrap:wrap;">
+    <button class="btn btn-secondary" onclick="setReminderFilter('all')" id="rf-all">Wszyscy aktywni</button>
+    <button class="btn btn-secondary" onclick="setReminderFilter('green')" id="rf-green">🟢 Do 2 tygodni</button>
+    <button class="btn btn-secondary" onclick="setReminderFilter('amber')" id="rf-amber">🟡 2–4 tygodnie</button>
+    <button class="btn btn-secondary" onclick="setReminderFilter('red')" id="rf-red">🔴 Ponad 4 tygodnie</button>
+  </div>
+  <div id="reminders-list"></div>
+</div>
+
+<!-- DATA -->
+<div class="page" id="page-data">
+  <h2 style="margin-bottom:1.25rem;">Zarządzanie danymi</h2>
+  <div style="display:grid;grid-template-columns:1fr 1fr;gap:1.25rem;" id="data-cards">
+    <div class="card">
+      <h3 style="margin-bottom:0.5rem;">💾 Eksport danych</h3>
+      <p style="color:var(--muted);font-size:0.875rem;margin-bottom:1rem;">Pobierz kopię zapasową całej bazy klientów jako plik JSON.</p>
+      <button class="btn btn-green" onclick="exportData()">⬇ Pobierz plik .json</button>
+    </div>
+    <div class="card">
+      <h3 style="margin-bottom:0.5rem;">📂 Import danych</h3>
+      <p style="color:var(--muted);font-size:0.875rem;margin-bottom:1rem;">Wczytaj wcześniej zapisany plik .json, aby odzyskać dane. <strong>Uwaga:</strong> nadpisze aktualne dane.</p>
+      <label class="btn btn-amber" style="cursor:pointer;display:inline-flex;align-items:center;gap:0.4rem;">
+        ⬆ Wczytaj plik .json
+        <input type="file" accept=".json" onchange="importData(event)" style="display:none;">
+      </label>
+    </div>
+    <div class="card" style="grid-column:1/-1;">
+      <h3 style="margin-bottom:0.4rem;">📊 Import z Excela / CSV</h3>
+      <p style="color:var(--muted);font-size:0.875rem;margin-bottom:0.75rem;">Wczytaj listę klientów z pliku <strong>.csv</strong> lub <strong>.xlsx</strong> (wyeksportowanego z Excela jako CSV). Nowi klienci zostaną <strong>dodani</strong> do istniejącej bazy — nic nie nadpisze.</p>
+      <div style="background:var(--bg);border:1px solid var(--border);border-radius:8px;padding:0.85rem 1rem;margin-bottom:1rem;font-size:0.8125rem;">
+        <div style="font-weight:600;margin-bottom:0.4rem;">Wymagane kolumny w pliku (nagłówki w pierwszym wierszu):</div>
+        <div style="display:flex;flex-wrap:wrap;gap:0.4rem;">
+          <span style="background:#fff;border:1px solid var(--border);border-radius:5px;padding:0.15rem 0.5rem;font-family:monospace;">nazwa</span>
+          <span style="color:var(--muted);align-self:center;">lub</span>
+          <span style="background:#fff;border:1px solid var(--border);border-radius:5px;padding:0.15rem 0.5rem;font-family:monospace;">imię i nazwisko</span>
+          <span style="color:var(--muted);align-self:center;">lub</span>
+          <span style="background:#fff;border:1px solid var(--border);border-radius:5px;padding:0.15rem 0.5rem;font-family:monospace;">firma</span>
+          <span style="color:var(--muted);align-self:center;margin-left:0.4rem;">Opcjonalnie:</span>
+          <span style="background:#fff;border:1px solid var(--border);border-radius:5px;padding:0.15rem 0.5rem;font-family:monospace;">telefon</span>
+          <span style="background:#fff;border:1px solid var(--border);border-radius:5px;padding:0.15rem 0.5rem;font-family:monospace;">email</span>
+          <span style="background:#fff;border:1px solid var(--border);border-radius:5px;padding:0.15rem 0.5rem;font-family:monospace;">notatki</span>
+          <span style="background:#fff;border:1px solid var(--border);border-radius:5px;padding:0.15rem 0.5rem;font-family:monospace;">status</span>
+        </div>
+        <div style="color:var(--muted);margin-top:0.5rem;font-size:0.78rem;">W Excelu: <em>Plik → Zapisz jako → CSV UTF-8 (rozdzielany przecinkami)</em></div>
+      </div>
+      <label class="btn btn-primary" style="cursor:pointer;display:inline-flex;align-items:center;gap:0.4rem;">
+        📊 Wczytaj plik Excel (.xlsx) lub CSV
+        <input type="file" accept=".csv,.txt,.xlsx,.xls" onchange="importCsv(event)" style="display:none;">
+      </label>
+      <div id="csv-preview" style="margin-top:1rem;"></div>
+    </div>
+    <div class="card" style="grid-column:1/-1;">
+      <h3 style="margin-bottom:0.5rem;color:var(--red);">🗑 Usuń wszystkie dane</h3>
+      <p style="color:var(--muted);font-size:0.875rem;margin-bottom:1rem;">Trwale usuwa wszystkich klientów z pamięci przeglądarki. Tej operacji nie można cofnąć.</p>
+      <button class="btn btn-danger" onclick="clearAllData()">Wyczyść bazę danych</button>
+    </div>
+  </div>
+  <div class="card" style="margin-top:0;">
+    <div class="section-title">Informacje o pamięci</div>
+    <p style="font-size:0.875rem;color:var(--muted);">Dane są przechowywane w pamięci przeglądarki (LocalStorage) i nie są wysyłane nigdzie. Działają w 100% offline.</p>
+    <p style="font-size:0.875rem;color:var(--muted);margin-top:0.5rem;">Liczba klientów: <strong id="info-count" style="color:var(--ink);">0</strong> &nbsp;|&nbsp; Ostatnia zmiana: <strong id="info-lastmod" style="color:var(--ink);">—</strong></p>
+  </div>
+</div>
+
+<!-- REPORTS -->
+<div class="page" id="page-reports">
+  <div style="display:flex;align-items:center;justify-content:space-between;margin-bottom:1.25rem;flex-wrap:wrap;gap:0.75rem;">
+    <h2 style="margin:0;">📈 Raporty</h2>
+    <div style="display:flex;gap:0.5rem;">
+      <button class="btn btn-secondary" id="rp-week" onclick="setReportPeriod('week')">Ten tydzień</button>
+      <button class="btn btn-primary" id="rp-month" onclick="setReportPeriod('month')">Ten miesiąc</button>
+      <button class="btn btn-secondary" id="rp-last" onclick="setReportPeriod('last')">Poprzedni miesiąc</button>
+    </div>
+  </div>
+  <div id="report-period-label" style="font-size:0.85rem;color:var(--muted);margin-bottom:1.5rem;"></div>
+  <div id="report-content"></div>
+</div>
+
+<!-- MAP -->
+<div class="page full-width" id="page-map">
+  <div style="position:relative;width:100%;">
+    <div id="map-container"></div>
+    <div class="map-legend" id="map-legend">
+      <div style="font-weight:700;font-size:0.75rem;margin-bottom:0.5rem;color:#374151;">LEGENDA</div>
+      <div class="map-legend-row"><div class="map-legend-dot" style="background:#2563eb;"></div>Nowy</div>
+      <div class="map-legend-row"><div class="map-legend-dot" style="background:#7c3aed;"></div>Lead</div>
+      <div class="map-legend-row"><div class="map-legend-dot" style="background:#d97706;"></div>W trakcie</div>
+      <div class="map-legend-row"><div class="map-legend-dot" style="background:#64748b;"></div>Oczekujący</div>
+      <div class="map-legend-row"><div class="map-legend-dot" style="background:#15803d;"></div>Stały klient</div>
+      <div class="map-legend-row"><div class="map-legend-dot" style="background:#dc2626;"></div>Zamknięty</div>
+      <div style="border-top:1px solid #e5e7eb;margin-top:0.4rem;padding-top:0.4rem;color:#6b7280;font-size:0.73rem;" id="map-count"></div>
+    </div>
+    <div style="position:absolute;top:1rem;right:1rem;z-index:1000;display:flex;gap:0.5rem;flex-wrap:wrap;">
+      <button class="btn btn-secondary" onclick="reclearGeoAndRender()" style="box-shadow:0 2px 8px rgba(0,0,0,0.15);background:white;" title="Wyczyść zapamiętane lokalizacje i załaduj ponownie">🔄 Odśwież pinezki</button>
+      <button class="btn btn-secondary" onclick="showPage('clients')" style="box-shadow:0 2px 8px rgba(0,0,0,0.15);background:white;">← Wróć do listy</button>
+    </div>
+    <div id="map-no-internet" style="display:none;position:absolute;top:1rem;left:50%;transform:translateX(-50%);z-index:1000;background:#fff3cd;border:1px solid #ffc107;border-radius:8px;padding:0.5rem 1rem;font-size:0.8rem;color:#856404;">
+      ⚠️ Brak internetu — kafelki mapy mogą nie być widoczne. Pinezki i dane działają offline.
+    </div>
+  </div>
+</div>
+
+<script>
+/* ===== TRYB DEMO: dane przykładowe =====
+   Wszystkie firmy, adresy, telefony i notatki poniżej są fikcyjne i wygenerowane na potrzeby demonstracji.
+   Daty liczą się od dzisiaj, żeby kolory wizyt i raporty zawsze wyglądały sensownie.
+   Dane dodane lub zmienione w demie zapisują się wyłącznie w tej przeglądarce (localStorage). */
+(function(){
+ try{
+  if(localStorage.getItem('crm_clients_v1')||localStorage.getItem('crm_demo_seeded'))return;
+  function d(n){var t=new Date();t.setDate(t.getDate()-n);return t.toISOString().slice(0,10)}
+  var W=[52.2297,21.0122],LO=[51.7592,19.4560],RA=[51.4027,21.1471],WR=[51.1079,17.0385],PO=[52.4064,16.9252],TO=[53.0138,18.5984],BY=[53.1235,18.0084],PL=[52.5463,19.7065];
+  var GOALS=['Zamówienie','Wizyta handlowa','Kontakt','Windykacja','Pozyskanie'];
+  var COMM=['Zamówienie złożone, dostawa w przyszłym tygodniu','Brak kierownika, wrócić po 12:00','Omówiona nowa oferta, klient zastanowi się do następnej wizyty','Przypomnienie o fakturze, obiecana wpłata w tym tygodniu','Zamówiono dodatkowe sztuki, wystawka przy kasie','Rozmowa o promocji na kolejny miesiąc','Półka uzupełniona, klient zadowolony','Prośba o zmianę terminu dostawy'];
+  // nazwa, ulica, miasto+kod, współrzędne, status, ostatnia wizyta (dni temu), utworzony (dni temu), liczba wizyt, odstęp, dostawa, notatka
+  var S=[
+   ['Sklep Pod Lipą','ul. Lipowa 12','00-001 Warszawa',W,'Stały klient',3,240,6,14,'własna dostawa','Zamawia co dwa tygodnie, kontakt: pani Ewa.'],
+   ['Delikatesy Zielony Rynek','ul. Targowa 5','03-001 Warszawa',[W[0]+0.02,W[1]+0.03],'Stały klient',9,300,6,14,'hurtownia partnerska','Największe zamówienia w piątki.'],
+   ['Mini Market U Kasi','ul. Ogrodowa 7','02-001 Warszawa',[W[0]-0.03,W[1]-0.02],'W trakcie',6,40,4,10,'własna dostawa','Testuje nowe produkty, decyzja po kolejnej wizycie.'],
+   ['Spożywczy Rodzinny','ul. Słoneczna 21','01-001 Warszawa',[W[0]+0.04,W[1]-0.04],'Stały klient',17,180,5,14,'własna dostawa',''],
+   ['Sklep Osiedlowy Orion','os. Gwiazdy 3','04-001 Warszawa',[W[0]-0.04,W[1]+0.05],'Oczekujący',31,120,4,20,'hurtownia partnerska','Czeka na decyzję właściciela o rozszerzeniu asortymentu.'],
+   ['Delikatesy Pod Kasztanem','ul. Kasztanowa 9','90-001 Łódź',LO,'Stały klient',11,260,6,14,'własna dostawa','Dobra rotacja, regularne zamówienia.'],
+   ['Market Centrum','ul. Piotrkowska 40','90-002 Łódź',[LO[0]+0.015,LO[1]+0.02],'W trakcie',5,35,3,10,'własna dostawa','Rozmowy o stałej wystawce.'],
+   ['Sklep Wiejski Jarzębina','ul. Polna 2','26-600 Radom',RA,'Nowy',2,3,1,0,'własna dostawa','Nowy klient, pierwsze zamówienie próbne.'],
+   ['Bazar Smaków','ul. Rynek 14','50-001 Wrocław',WR,'Stały klient',21,200,5,18,'hurtownia partnerska','Wizyta do ponowienia w tym tygodniu.'],
+   ['Delikatesy Smaki Południa','ul. Kwiatowa 8','50-002 Wrocław',[WR[0]-0.02,WR[1]+0.03],'Nowy',1,2,1,0,'własna dostawa','Pierwsza wizyta za nami, umówiona kolejna.'],
+   ['Piekarnia i Sklep Kłos','ul. Zboże 1','60-001 Poznań',PO,'Stały klient',13,150,4,14,'własna dostawa',''],
+   ['Mini Market Przystanek','ul. Dworcowa 3','87-100 Toruń',TO,'Lead',8,12,2,6,'do ustalenia','Zainteresowany ofertą, czeka na wycenę.'],
+   ['Sklep Nad Rzeką','ul. Nadrzeczna 6','85-001 Bydgoszcz',BY,'Zamknięty',70,330,5,20,'własna dostawa','Sklep zlikwidowany.'],
+   ['Hurtownia Dobry Wybór','ul. Magazynowa 15','09-400 Płock',PL,'Lead',16,18,2,8,'do ustalenia','Rozmowy o współpracy hurtowej.'],
+   ['Sklep Ogrodowa 5','ul. Ogrodowa 5','09-402 Płock',[PL[0]+0.01,PL[1]-0.015],'W trakcie',24,55,3,12,'własna dostawa','Wymaga częstszego kontaktu.'],
+   ['Delikatesy Stara Brama','ul. Bramowa 11','00-002 Warszawa',[W[0]-0.01,W[1]+0.01],'Stały klient',1,280,7,10,'własna dostawa','Bardzo dobra współpraca, wzorowy klient.']
+  ];
+  var phone=100,out=[];
+  S.forEach(function(r,i){
+   var st=r[4],last=r[5],created=r[6],n=r[7],gap=r[8],visits=[];
+   for(var k=n-1;k>=0;k--){
+    var di=last+k*gap, g=GOALS[(i+k)%GOALS.length];
+    if(st==='Zamknięty'&&k===0)g='Kontakt';
+    visits.push({date:d(di),goal:g,realized:['tak','tak','częściowo','tak','nie'][(i+k)%5].replace('częściowo','czesciowo'),comment:COMM[(i*2+k)%COMM.length],addedAt:new Date(Date.now()-di*864e5).toISOString()});
+   }
+   var hist=[];
+   if(st==='Nowy')hist=[{status:'Nowy',prevStatus:null,date:d(created)}];
+   else if(st==='Lead')hist=[{status:'Lead',prevStatus:null,date:d(created)}];
+   else if(st==='W trakcie')hist=[{status:'Lead',prevStatus:null,date:d(created)},{status:'W trakcie',prevStatus:'Lead',date:d(Math.max(3,Math.round(created/3)))}];
+   else if(st==='Oczekujący')hist=[{status:'Nowy',prevStatus:null,date:d(created)},{status:'Stały klient',prevStatus:'Nowy',date:d(created-32)},{status:'Oczekujący',prevStatus:'Stały klient',date:d(14)}];
+   else if(st==='Zamknięty')hist=[{status:'Nowy',prevStatus:null,date:d(created)},{status:'Stały klient',prevStatus:'Nowy',date:d(created-32)},{status:'Zamknięty',prevStatus:'Stały klient',date:d(22)}];
+   else hist=[{status:'Nowy',prevStatus:null,date:d(created)},{status:'Stały klient',prevStatus:'Nowy',date:d(created-32)}];
+   var lat=+(r[3][0]+((i*37)%11-5)*0.0012).toFixed(5),lng=+(r[3][1]+((i*53)%13-6)*0.0012).toFixed(5);
+   out.push({id:'c_demo_'+(i+1),name:r[0],status:st,phone:'600 100 '+(100+i*7).toString().padStart(3,'0'),email:'kontakt'+(i+1)+'@example.com',
+    address:r[1]+', '+r[2],deliveryAddressSame:true,deliveryAddress:r[1]+', '+r[2],lastContact:visits.length?visits[visits.length-1].date:'',
+    delivery:r[9],notes:r[10],visits:visits,statusHistory:hist,lat:lat,lng:lng,
+    createdAt:new Date(Date.now()-created*864e5).toISOString(),updatedAt:new Date(Date.now()-last*864e5).toISOString()});
+  });
+  localStorage.setItem('crm_clients_v1',JSON.stringify(out));
+  localStorage.setItem('crm_meta_v1',JSON.stringify({lastMod:new Date().toISOString(),count:out.length}));
+  localStorage.setItem('crm_demo_seeded','1');
+ }catch(e){}
+ document.addEventListener('DOMContentLoaded',function(){var b=document.createElement('div');
+  b.style.cssText='position:fixed;left:50%;bottom:calc(10px + env(safe-area-inset-bottom,0px));transform:translateX(-50%);z-index:9999;background:#2b2b2b;color:#fff;padding:7px 14px;border-radius:999px;font:600 12px system-ui,sans-serif;pointer-events:none;opacity:.92;white-space:nowrap';
+  b.textContent='Wersja demo: fikcyjni klienci, zapis tylko w tej przeglądarce';document.body.appendChild(b)});
+})();
+</script>
+
+<script>
+// ============================================================
+// DATA LAYER
+// ============================================================
+const STORAGE_KEY = 'crm_clients_v1';
+const META_KEY = 'crm_meta_v1';
+
+function loadClients() {
+  try { 
+    const data = JSON.parse(localStorage.getItem(STORAGE_KEY)) || [];
+    return migrateStatusHistory(data);
+  }
+  catch { return []; }
+}
+
+// Backfill statusHistory for clients that don't have it yet
+// Uses createdAt date so existing data appears in correct month's report
+function migrateStatusHistory(data) {
+  let changed = false;
+  data.forEach(c => {
+    if (!c.statusHistory || c.statusHistory.length === 0) {
+      const date = (c.createdAt || new Date().toISOString()).slice(0, 10);
+      c.statusHistory = [{ status: c.status, prevStatus: null, date }];
+      changed = true;
+    }
+  });
+  if (changed) {
+    // Save silently so future loads don't need to migrate again
+    try { localStorage.setItem(STORAGE_KEY, JSON.stringify(data)); } catch(e) {}
+  }
+  return data;
+}
+function saveClients(clients) {
+  localStorage.setItem(STORAGE_KEY, JSON.stringify(clients));
+  localStorage.setItem(META_KEY, JSON.stringify({ lastMod: new Date().toISOString(), count: clients.length }));
+}
+function loadMeta() {
+  try { return JSON.parse(localStorage.getItem(META_KEY)) || {}; }
+  catch { return {}; }
+}
+function genId() { return 'c_' + Date.now() + '_' + Math.random().toString(36).slice(2,7); }
+
+let clients = loadClients();
+let reminderFilter = 'all';
+let _sortCol = 'name';
+let _sortDir = 1; // 1=asc, -1=desc
+
+// ============================================================
+// NAV
+// ============================================================
+function showPage(id) {
+  document.querySelectorAll('.page').forEach(p => p.classList.remove('active'));
+  document.querySelectorAll('nav button').forEach(b => b.classList.remove('active'));
+  document.getElementById('page-' + id).classList.add('active');
+  document.getElementById('nav-' + id).classList.add('active');
+  if (id === 'dashboard') renderDashboard();
+  if (id === 'clients') renderClients();
+  if (id === 'reminders') renderReminders();
+  if (id === 'reports') renderReports();
+  if (id === 'map') renderMap();
+  if (id === 'data') renderDataPage();
+}
+
+// ============================================================
+// UTILITIES
+// ============================================================
+function today() { return new Date().toISOString().slice(0,10); }
+function addDays(d, n) { const dt = new Date(d); dt.setDate(dt.getDate()+n); return dt.toISOString().slice(0,10); }
+function formatDate(s) {
+  if (!s) return '—';
+  const [y,m,d] = s.split('-');
+  return `${d}.${m}.${y}`;
+}
+function daysDiff(s) {
+  if (!s) return null;
+  const t = new Date(today()); const dt = new Date(s);
+  return Math.round((dt - t) / 86400000);
+}
+// Returns color info for "ostatnia wizyta" field based on how many days AGO it was
+// For active statuses: green ≤14 days ago, amber 15–28 days ago, red >28 days ago
+function lastVisitColor(dateStr, status) {
+  if (!dateStr) return null;
+  const closed = status === 'Zamknięty';
+  if (closed) return null; // no color for closed
+  const diff = daysDiff(dateStr); // negative = in the past
+  const daysAgo = -diff; // positive number = days since last visit
+  if (daysAgo < 0) return { color: 'var(--muted)', label: 'przyszłość' }; // date in future
+  if (daysAgo <= 14) return { color: 'var(--green)', bg: 'var(--green-light)', label: `${daysAgo}d temu` };
+  if (daysAgo <= 28) return { color: 'var(--amber)', bg: 'var(--amber-light)', label: `${daysAgo}d temu` };
+  return { color: 'var(--red)', bg: 'var(--red-light)', label: `${daysAgo}d temu` };
+}
+function statusBadge(status) {
+  const map = { 'Nowy':'badge-new','Lead':'badge-lead','W trakcie':'badge-contact','Zamknięty':'badge-closed','Stały klient':'badge-regular','Oczekujący':'badge-waiting' };
+  return `<span class="badge ${map[status]||'badge-new'}">${status||'Nowy'}</span>`;
+}
+function reminderBadge(date) {
+  const diff = daysDiff(date);
+  if (diff === null) return '';
+  if (diff < 0) return `<span class="badge badge-lost">Zaległy o ${Math.abs(diff)}d</span>`;
+  if (diff === 0) return `<span class="badge badge-today">Dziś</span>`;
+  if (diff <= 3) return `<span class="badge badge-soon">Za ${diff}d</span>`;
+  return `<span class="badge" style="background:#ede9fe;color:#7c3aed;">Za ${diff}d</span>`;
+}
+function showToast(msg) {
+  const t = document.getElementById('toast');
+  t.textContent = msg; t.classList.add('show');
+  setTimeout(() => t.classList.remove('show'), 2500);
+}
+function escHtml(s) {
+  return String(s||'').replace(/&/g,'&amp;').replace(/</g,'&lt;').replace(/>/g,'&gt;').replace(/"/g,'&quot;');
+}
+
+// ============================================================
+// MODAL
+// ============================================================
+function openAddModal() { openClientModal(null); }
+function openEditModal(id) { openClientModal(clients.find(c=>c.id===id)); }
+
+function openClientModal(client) {
+  const isEdit = !!client;
+  window._editingClientId = isEdit ? client.id : null;
+  document.getElementById('modal-title').textContent = isEdit ? 'Edytuj klienta' : 'Nowy klient';
+  document.getElementById('modal-body').innerHTML = clientForm(client);
+  document.getElementById('modal-footer').innerHTML = `
+    <button class="btn btn-secondary" onclick="closeModal()">Anuluj</button>
+    <button class="btn btn-primary" onclick="saveClient('${isEdit ? client.id : ''}')">${isEdit?'Zapisz zmiany':'Dodaj klienta'}</button>
+  `;
+  document.getElementById('modal').classList.add('open');
+}
+function closeModal() { document.getElementById('modal').classList.remove('open'); }
+document.getElementById('modal').addEventListener('click', e => { if(e.target === document.getElementById('modal')) closeModal(); });
+
+function clientForm(c) {
+  c = c || {};
+  const sameAddr = c.deliveryAddressSame !== false;
+  const visits = c.visits || [];
+  const latestVisit = visits.length ? visits[visits.length - 1] : null;
+  return `
+    <div class="grid-2">
+      <div class="form-group">
+        <label>Imię i nazwisko / Nazwa firmy *</label>
+        <input id="f-name" type="text" value="${escHtml(c.name)}" placeholder="np. Jan Kowalski / ABC Sp. z o.o.">
+      </div>
+      <div class="form-group">
+        <label>Status</label>
+        <select id="f-status">
+          ${['Nowy','Lead','W trakcie','Oczekujący','Stały klient','Zamknięty'].map(s=>`<option ${c.status===s?'selected':''}>${s}</option>`).join('')}
+        </select>
+      </div>
+      <div class="form-group">
+        <label>Telefon</label>
+        <input id="f-phone" type="tel" value="${escHtml(c.phone)}" placeholder="+48 600 000 000">
+      </div>
+      <div class="form-group">
+        <label>E-mail</label>
+        <input id="f-email" type="email" value="${escHtml(c.email)}" placeholder="jan@firma.pl">
+      </div>
+    </div>
+
+    <div style="border-top:1px solid var(--border);margin:0.25rem 0 1rem;padding-top:1rem;">
+      <div style="font-size:0.7rem;font-weight:700;text-transform:uppercase;letter-spacing:0.08em;color:var(--muted);margin-bottom:0.75rem;">📍 Adres</div>
+      <div class="form-group">
+        <label>Adres sklepu / firmy</label>
+        <input id="f-address" type="text" value="${escHtml(c.address)}" placeholder="ul. Kwiatowa 5, 00-000 Warszawa" oninput="onAddressInput()">
+        <div style="font-size:0.75rem;color:var(--muted);margin-top:0.25rem;">Wpisz pełny adres — posłuży do umieszczenia na mapie.</div>
+      </div>
+      <div class="form-group" style="margin-bottom:0.5rem;">
+        <label style="display:flex;align-items:center;gap:0.5rem;cursor:pointer;font-weight:500;">
+          <input type="checkbox" id="f-sameAddr" ${sameAddr?'checked':''} onchange="toggleDeliveryAddr()" style="width:auto;margin:0;cursor:pointer;">
+          Adres dostawy taki sam jak adres sklepu
+        </label>
+      </div>
+      <div id="delivery-addr-group" style="display:${sameAddr?'none':'block'}">
+        <div class="form-group">
+          <label>Adres dostawy</label>
+          <input id="f-deliveryAddress" type="text" value="${escHtml(c.deliveryAddress)}" placeholder="ul. Magazynowa 12, 00-000 Warszawa">
+        </div>
+      </div>
+    </div>
+
+    <div style="border-top:1px solid var(--border);margin:0.25rem 0 1rem;padding-top:1rem;">
+      <div style="font-size:0.7rem;font-weight:700;text-transform:uppercase;letter-spacing:0.08em;color:var(--muted);margin-bottom:0.75rem;">📅 Nowa wizyta</div>
+      <div class="grid-2">
+        <div class="form-group">
+          <label>Data wizyty</label>
+          <input id="f-lastContact" type="date" value="${c.lastContact||''}">
+        </div>
+        <div class="form-group">
+          <label>Cel wizyty</label>
+          <div style="display:flex;gap:0.5rem;flex-wrap:wrap;margin-bottom:0.4rem;" id="f-goal-chips">
+            ${['Zamówienie','Windykacja','Pozyskanie','Wizyta handlowa','Kontakt'].map(g=>`
+              <label style="display:flex;align-items:center;gap:0.25rem;font-size:0.8rem;font-weight:400;cursor:pointer;background:var(--bg);border:1px solid var(--border);border-radius:6px;padding:0.2rem 0.55rem;">
+                <input type="radio" name="f-goal" value="${g}" style="width:auto;margin:0;"> ${g}
+              </label>`).join('')}
+            <label style="display:flex;align-items:center;gap:0.25rem;font-size:0.8rem;font-weight:400;cursor:pointer;background:var(--bg);border:1px solid var(--border);border-radius:6px;padding:0.2rem 0.55rem;">
+              <input type="radio" name="f-goal" value="__other__" style="width:auto;margin:0;" onclick="document.getElementById('f-goal-other').style.display='block'"> Inne…
+            </label>
+          </div>
+          <input id="f-goal-other" type="text" placeholder="Wpisz cel…" style="display:none;margin-top:0.25rem;">
+        </div>
+      </div>
+      <div class="grid-2">
+        <div class="form-group">
+          <label>Realizacja celu</label>
+          <div style="display:flex;gap:0.75rem;margin-top:0.25rem;">
+            <label style="display:flex;align-items:center;gap:0.4rem;font-size:0.875rem;cursor:pointer;">
+              <input type="radio" name="f-realized" value="tak" style="width:auto;margin:0;"> ✅ Tak
+            </label>
+            <label style="display:flex;align-items:center;gap:0.4rem;font-size:0.875rem;cursor:pointer;">
+              <input type="radio" name="f-realized" value="nie" style="width:auto;margin:0;"> ❌ Nie
+            </label>
+            <label style="display:flex;align-items:center;gap:0.4rem;font-size:0.875rem;cursor:pointer;">
+              <input type="radio" name="f-realized" value="czesciowo" style="width:auto;margin:0;"> 🟡 Częściowo
+            </label>
+          </div>
+        </div>
+        <div class="form-group">
+          <label>Komentarz / uwagi</label>
+          <input id="f-visitComment" type="text" value="" placeholder="np. brak kierownika, zamówiono 10 szt...">
+        </div>
+      </div>
+      ${visits.length ? `
+      <div style="margin-top:0.25rem;">
+        ${latestVisit ? `<div class="visit-entry latest">
+          <div class="visit-date">📌 Ostatnia: ${formatDate(latestVisit.date)}${latestVisit.goal ? ` · <strong>${escHtml(latestVisit.goal)}</strong>` : ''}${latestVisit.realized ? ` · ${latestVisit.realized==='tak'?'✅ Tak':latestVisit.realized==='nie'?'❌ Nie':'🟡 Częściowo'}` : ''}</div>
+          <div class="${latestVisit.comment ? 'visit-comment' : 'visit-comment-empty'}">${latestVisit.comment ? escHtml(latestVisit.comment) : 'brak komentarza'}</div>
+        </div>` : ''}
+        <button type="button" class="btn btn-secondary" style="font-size:0.78rem;padding:0.3rem 0.7rem;margin-top:0.25rem;" onclick="openHistoryModal('${c.id}')">
+          📋 Zobacz wszystkie wizyty (${visits.length})
+        </button>
+      </div>` : `<div style="font-size:0.8rem;color:var(--muted);">Brak zapisanych wizyt. Wypełnij pola powyżej żeby dodać pierwszą.</div>`}
+    </div>
+
+    <div class="grid-2" style="margin-top:0.25rem;">
+      <div class="form-group">
+        <label>Sposób dostawy</label>
+        <input id="f-delivery" type="text" value="${escHtml(c.delivery)}" placeholder="np. własna dostawa, hurtownia XYZ...">
+      </div>
+    </div>
+    <div class="form-group">
+      <label>Notatki ogólne</label>
+      <textarea id="f-notes" placeholder="Dodatkowe informacje, ustalenia stałe...">${escHtml(c.notes)}</textarea>
+    </div>
+  `;
+}
+
+function toggleDeliveryAddr() {
+  const same = document.getElementById('f-sameAddr').checked;
+  document.getElementById('delivery-addr-group').style.display = same ? 'none' : 'block';
+}
+function onAddressInput() {
+  // clear cached coords when address changes so map re-geocodes
+  if (window._editingClientId) {
+    const c = clients.find(x => x.id === window._editingClientId);
+    if (c) { const newAddr = document.getElementById('f-address').value.trim(); if (newAddr !== c.address) { c._coordsDirty = true; } }
+  }
+}
+
+function saveClient(id) {
+  const name = document.getElementById('f-name').value.trim();
+  if (!name) { alert('Imię/Nazwa firmy jest wymagane.'); return; }
+  const newAddress = document.getElementById('f-address').value.trim();
+  const sameAddr = document.getElementById('f-sameAddr').checked;
+  const existing = id ? clients.find(c => c.id === id) : null;
+  const addrChanged = !existing || existing.address !== newAddress;
+  const newLastContact = document.getElementById('f-lastContact').value;
+  const visitComment = (document.getElementById('f-visitComment')?.value||'').trim();
+  const goalRadio = document.querySelector('input[name="f-goal"]:checked');
+  let visitGoal = goalRadio ? goalRadio.value : '';
+  if (visitGoal === '__other__') visitGoal = (document.getElementById('f-goal-other')?.value||'').trim();
+  const realizedRadio = document.querySelector('input[name="f-realized"]:checked');
+  const visitRealized = realizedRadio ? realizedRadio.value : '';
+
+  // Build updated visits array
+  let visits = existing ? (existing.visits || []) : [];
+  const prevLastContact = existing ? existing.lastContact : null;
+  if (newLastContact && (newLastContact !== prevLastContact || visitGoal || visitComment)) {
+    visits = visits.filter(v => v.date !== newLastContact);
+    visits.push({
+      date: newLastContact,
+      goal: visitGoal,
+      realized: visitRealized,
+      comment: visitComment,
+      addedAt: new Date().toISOString()
+    });
+    visits.sort((a,b) => a.date.localeCompare(b.date));
+  } else if (newLastContact && visitComment && existing) {
+    const idx = visits.findIndex(v => v.date === newLastContact);
+    if (idx !== -1) { visits[idx].comment = visitComment; if (visitGoal) visits[idx].goal = visitGoal; if (visitRealized) visits[idx].realized = visitRealized; }
+    else visits.push({ date: newLastContact, goal: visitGoal, realized: visitRealized, comment: visitComment, addedAt: new Date().toISOString() });
+  }
+
+  const data = {
+    name, status: document.getElementById('f-status').value,
+    phone: document.getElementById('f-phone').value.trim(),
+    email: document.getElementById('f-email').value.trim(),
+    address: newAddress,
+    deliveryAddressSame: sameAddr,
+    deliveryAddress: sameAddr ? newAddress : (document.getElementById('f-deliveryAddress')?.value.trim()||''),
+    lastContact: newLastContact,
+    delivery: document.getElementById('f-delivery').value.trim(),
+    notes: document.getElementById('f-notes').value.trim(),
+    visits,
+  };
+  if (addrChanged) { data.lat = null; data.lng = null; }
+  if (id) {
+    const idx = clients.findIndex(c=>c.id===id);
+    const prev = clients[idx];
+    // Track status changes
+    if (prev.status !== data.status) {
+      const history = prev.statusHistory || [];
+      history.push({ status: data.status, prevStatus: prev.status, date: new Date().toISOString().slice(0,10) });
+      data.statusHistory = history;
+    }
+    clients[idx] = { ...prev, ...data, updatedAt: new Date().toISOString() };
+    showToast('✅ Klient zaktualizowany');
+  } else {
+    // New client — record initial status
+    data.statusHistory = [{ status: data.status, prevStatus: null, date: new Date().toISOString().slice(0,10) }];
+    clients.unshift({ id: genId(), ...data, createdAt: new Date().toISOString(), updatedAt: new Date().toISOString() });
+    showToast('✅ Klient dodany');
+  }
+  saveClients(clients);
+  closeModal();
+  renderClients();
+  renderDashboard();
+}
+
+function deleteClient(id) {
+  if (!confirm('Czy na pewno chcesz usunąć tego klienta?')) return;
+  clients = clients.filter(c=>c.id!==id);
+  saveClients(clients);
+  renderClients(); renderDashboard(); renderReminders();
+  showToast('🗑 Klient usunięty');
+}
+
+// ============================================================
+// DASHBOARD
+// ============================================================
+function renderDashboard() {
+  const d = new Date();
+  document.getElementById('today-date').textContent = d.toLocaleDateString('pl-PL', { weekday:'long', year:'numeric', month:'long', day:'numeric' });
+
+  const total = clients.length;
+  const byStatus = s => clients.filter(c=>c.status===s).length;
+  const activeStatuses = ['Nowy','Lead','W trakcie','Stały klient'];
+  const overdueCount = clients.filter(c => activeStatuses.includes(c.status) && c.lastContact && -daysDiff(c.lastContact) > 14).length;
+  const noContactCount = clients.filter(c => activeStatuses.includes(c.status) && !c.lastContact).length;
+  const alertCount = overdueCount + noContactCount;
+
+  // New this month = clients who got status Nowy in current calendar month
+  const now2 = new Date();
+  const monthStart = `${now2.getFullYear()}-${String(now2.getMonth()+1).padStart(2,'0')}-01`;
+  const monthEnd = now2.toISOString().slice(0,10);
+  const newThisMonth = clients.filter(c =>
+    (c.statusHistory||[]).some(h => h.status === 'Nowy' && h.date >= monthStart && h.date <= monthEnd)
+  ).length;
+
+  document.getElementById('stats').innerHTML = `
+    <div class="stat"><div class="stat-num" style="color:var(--ink)">${total}</div><div class="stat-label">Wszystkich klientów</div></div>
+    <div class="stat"><div class="stat-num" style="color:var(--blue)">${newThisMonth}</div><div class="stat-label">Nowych w tym miesiącu<br><span style="font-size:0.72rem;font-weight:400;">(status Nowy dziś: ${byStatus('Nowy')})</span></div></div>
+    <div class="stat"><div class="stat-num" style="color:#7c3aed">${byStatus('Stały klient')}</div><div class="stat-label">Stałych klientów</div></div>
+    <div class="stat"><div class="stat-num" style="color:var(--red)">${alertCount}</div><div class="stat-label">Wymaga kontaktu</div></div>
+  `;
+
+  // Dashboard reminders: active clients not contacted for >14 days or never
+  const needContact = clients
+    .filter(c => activeStatuses.includes(c.status))
+    .map(c => ({ ...c, daysAgo: c.lastContact ? -daysDiff(c.lastContact) : 999 }))
+    .filter(c => c.daysAgo > 14)
+    .sort((a,b) => b.daysAgo - a.daysAgo)
+    .slice(0, 5);
+
+  const remEl = document.getElementById('dashboard-reminders');
+  if (!needContact.length) { remEl.innerHTML = '<div class="empty"><div class="empty-icon">🎉</div><p>Wszyscy aktywni klienci mają kontakt z ostatnich 2 tygodni.</p></div>'; }
+  else {
+    remEl.innerHTML = needContact.map(c => {
+      const lvc = lastVisitColor(c.lastContact, c.status);
+      const visitInfo = c.lastContact
+        ? `<span style="background:${lvc.bg};color:${lvc.color};border-radius:5px;padding:0.15rem 0.5rem;font-size:0.78rem;font-weight:600;">${lvc.label}</span>`
+        : `<span style="background:var(--red-light);color:var(--red);border-radius:5px;padding:0.15rem 0.5rem;font-size:0.78rem;font-weight:600;">brak kontaktu</span>`;
+      const subline = [shortAddr(c), c.phone].filter(Boolean).join(' · ');
+      return `
+      <div class="reminder-card ${c.daysAgo > 28 ? '' : 'soon'}" style="margin-bottom:0.5rem;">
+        <div>
+          <div style="font-weight:600;margin-bottom:0.25rem;">${escHtml(c.name)} ${statusBadge(c.status)}</div>
+          <div style="font-size:0.8rem;color:var(--muted);">${escHtml(subline)}</div>
+        </div>
+        <div style="display:flex;align-items:center;gap:0.5rem;flex-shrink:0;">
+          ${visitInfo}
+          <button class="btn btn-secondary" style="padding:0.3rem 0.6rem;font-size:0.8rem;" onclick="openEditModal('${c.id}')">Edytuj</button>
+        </div>
+      </div>`;
+    }).join('');
+  }
+
+  const recEl = document.getElementById('recent-clients');
+  const recent = clients.slice(0,5);
+  if (!recent.length) { recEl.innerHTML = '<div class="empty"><div class="empty-icon">👤</div><p>Brak klientów. <button class="btn btn-primary" onclick="showPage(\'clients\')">Dodaj pierwszego klienta</button></p></div>'; }
+  else {
+    recEl.innerHTML = `<table><thead><tr><th>Nazwa</th><th>Status</th><th>Adres</th><th>Telefon</th></tr></thead><tbody>
+      ${recent.map(c=>`<tr>
+        <td><span style="font-weight:500;">${escHtml(c.name)}</span></td>
+        <td>${statusBadge(c.status)}</td>
+        <td style="color:var(--muted);font-size:0.85rem;">${escHtml(shortAddr(c))||'—'}</td>
+        <td style="color:var(--muted)">${escHtml(c.phone)||'—'}</td>
+      </tr>`).join('')}
+    </tbody></table>`;
+  }
+}
+
+// ============================================================
+// CLIENTS TABLE
+// ============================================================
+function sortClients(col) {
+  if (_sortCol === col) _sortDir *= -1;
+  else { _sortCol = col; _sortDir = 1; }
+  renderClients();
+}
+
+function renderClients() {
+  const q = (document.getElementById('search-input')?.value||'').toLowerCase();
+  const sf = document.getElementById('filter-status')?.value||'';
+  let list = clients.filter(c => {
+    const match = !q || c.name.toLowerCase().includes(q) || (c.email||'').toLowerCase().includes(q) || (c.phone||'').includes(q) || (c.address||'').toLowerCase().includes(q);
+    const status = !sf || c.status === sf;
+    return match && status;
+  });
+
+  // Sort
+  list.sort((a, b) => {
+    let av, bv;
+    if (_sortCol === 'name')        { av = a.name||''; bv = b.name||''; }
+    else if (_sortCol === 'status') { av = a.status||''; bv = b.status||''; }
+    else if (_sortCol === 'city')   {
+      av = extractCity(a.address); bv = extractCity(b.address);
+    }
+    else if (_sortCol === 'visit')  {
+      av = a.lastContact||'0000'; bv = b.lastContact||'0000';
+    }
+    else { av = a.name||''; bv = b.name||''; }
+    return av.localeCompare(bv, 'pl') * _sortDir;
+  });
+
+  const el = document.getElementById('clients-table');
+  if (!list.length) {
+    el.innerHTML = '<div class="empty"><div class="empty-icon">🔍</div><p>Brak klientów spełniających kryteria wyszukiwania.</p></div>';
+    return;
+  }
+
+  const isMobile = window.innerWidth < 680;
+
+  if (isMobile) {
+    el.innerHTML = '<div style="padding:0.75rem;">' + list.map(c => {
+      const lvc = lastVisitColor(c.lastContact, c.status);
+      const visitBadge = c.lastContact
+        ? (c.status === 'Zamknięty'
+          ? `<span style="color:var(--muted)">${formatDate(c.lastContact)}</span>`
+          : lvc
+            ? `<span style="background:${lvc.bg};color:${lvc.color};border-radius:5px;padding:0.15rem 0.45rem;font-size:0.75rem;font-weight:600;">${formatDate(c.lastContact)} · ${lvc.label}</span>`
+            : formatDate(c.lastContact))
+        : '<span style="color:var(--muted)">brak wizyty</span>';
+      const latestVisit = (c.visits||[]).length ? c.visits[c.visits.length-1] : null;
+      const city = extractCity(c.address);
+      return `<div class="client-card">
+        <div class="client-card-header">
+          <div>
+            <div class="client-card-name">${escHtml(c.name)}</div>
+            <div style="margin-top:0.25rem;display:flex;align-items:center;gap:0.5rem;flex-wrap:wrap;">
+              ${statusBadge(c.status)}
+              ${city ? `<span style="font-size:0.78rem;color:var(--muted);">📍 ${escHtml(city)}</span>` : ''}
+            </div>
+          </div>
+          <div style="display:flex;gap:0.35rem;flex-shrink:0;">
+            <button class="btn btn-secondary" style="padding:0.35rem 0.6rem;font-size:0.8rem;" onclick="openEditModal('${c.id}')">✏️</button>
+            <button class="btn btn-secondary" style="padding:0.35rem 0.6rem;font-size:0.8rem;" onclick="openHistoryModal('${c.id}')">📋${(c.visits||[]).length ? ' '+c.visits.length : ''}</button>
+            <button class="btn btn-danger" style="padding:0.35rem 0.6rem;font-size:0.8rem;" onclick="deleteClient('${c.id}')">🗑</button>
+          </div>
+        </div>
+        ${c.phone ? `<div class="client-card-row">📞 <a href="tel:${escHtml(c.phone)}" style="color:var(--accent);text-decoration:none;">${escHtml(c.phone)}</a></div>` : ''}
+        ${c.address ? `<div class="client-card-row">📍 ${escHtml(c.address)}</div>` : ''}
+        ${c.delivery ? `<div class="client-card-row">🚚 ${escHtml(c.delivery)}</div>` : ''}
+        <div class="client-card-row">📅 ${visitBadge}</div>
+        ${latestVisit && latestVisit.comment ? `<div class="client-card-row">💬 ${escHtml(latestVisit.comment)}</div>` : ''}
+      </div>`;
+    }).join('') + '</div>';
+  } else {
+    // Helper for sortable <th>
+    const th = (col, label) => {
+      const active = _sortCol === col;
+      const cls = active ? (_sortDir === 1 ? 'sort-asc' : 'sort-desc') : '';
+      return `<th class="sortable ${cls}" onclick="sortClients('${col}')">${label}</th>`;
+    };
+
+    el.innerHTML = `<table>
+      <thead><tr>
+        ${th('name','Nazwa')}
+        ${th('status','Status')}
+        <th>Telefon</th>
+        ${th('city','Miasto / Adres')}
+        ${th('visit','Ostatnia wizyta')}
+        <th>Dostawa</th>
+        <th>Akcje</th>
+      </tr></thead>
+      <tbody>
+      ${list.map(c => {
+        const lvc = lastVisitColor(c.lastContact, c.status);
+        const latestVisit = (c.visits||[]).length ? c.visits[c.visits.length - 1] : null;
+        const visitCell = c.lastContact
+          ? (c.status === 'Zamknięty'
+              ? `<span style="color:var(--muted)">${formatDate(c.lastContact)}</span>`
+              : lvc
+                ? `<div style="display:inline-flex;align-items:center;gap:0.4rem;background:${lvc.bg};color:${lvc.color};border-radius:6px;padding:0.2rem 0.55rem;font-size:0.8rem;font-weight:600;">${formatDate(c.lastContact)}<span style="opacity:0.8;font-weight:400">${lvc.label}</span></div>`
+                : `<span style="color:var(--muted)">${formatDate(c.lastContact)}</span>`)
+          : '<span style="color:var(--muted)">—</span>';
+        const commentSnippet = latestVisit && latestVisit.comment
+          ? `<div style="font-size:0.73rem;color:var(--muted);margin-top:0.2rem;max-width:160px;white-space:nowrap;overflow:hidden;text-overflow:ellipsis;" title="${escHtml(latestVisit.comment)}">💬 ${escHtml(latestVisit.comment)}</div>` : '';
+
+        // Address: bold city + street below
+        const city   = extractCity(c.address);
+        const street = extractStreet(c.address);
+        const addrCell = c.address
+          ? `<div style="font-weight:600;font-size:0.85rem;">${escHtml(city||c.address)}</div>
+             ${street && city ? `<div style="font-size:0.75rem;color:var(--muted);margin-top:0.1rem;">${escHtml(street)}</div>` : ''}`
+          : '<span style="color:var(--muted)">—</span>';
+
+        return `<tr>
+        <td>
+          <div style="font-weight:600;">${escHtml(c.name)}</div>
+          ${c.notes?`<div style="font-size:0.73rem;color:var(--muted);margin-top:0.1rem;max-width:200px;white-space:nowrap;overflow:hidden;text-overflow:ellipsis;">${escHtml(c.notes)}</div>`:''}
+        </td>
+        <td>${statusBadge(c.status)}</td>
+        <td style="color:var(--muted);white-space:nowrap;">${escHtml(c.phone)||'—'}</td>
+        <td style="min-width:130px;">${addrCell}</td>
+        <td>${visitCell}${commentSnippet}</td>
+        <td style="color:var(--muted);font-size:0.8rem;max-width:110px;">${escHtml(c.delivery)||'—'}</td>
+        <td>
+          <div style="display:flex;gap:0.4rem;flex-wrap:wrap;">
+            <button class="btn btn-secondary" style="padding:0.3rem 0.6rem;font-size:0.8rem;" onclick="openEditModal('${c.id}')">✏️</button>
+            <button class="btn btn-secondary" style="padding:0.3rem 0.6rem;font-size:0.8rem;" onclick="openHistoryModal('${c.id}')" title="Historia wizyt">📋${(c.visits||[]).length ? ' '+c.visits.length : ''}</button>
+            <button class="btn btn-danger" style="padding:0.3rem 0.6rem;font-size:0.8rem;" onclick="deleteClient('${c.id}')">🗑</button>
+          </div>
+        </td>
+      </tr>`;}).join('')}
+      </tbody>
+    </table>`;
+  }
+}
+
+// Extract city and street from combined "street, city" or "street, city, woj. X" format
+function extractCity(address) {
+  if (!address) return '';
+  // Remove "woj. X" suffix
+  const clean = address.replace(/,?\s*woj\.\s*\S+/i, '').trim();
+  // Last comma-separated part is the city
+  const parts = clean.split(',').map(p => p.trim()).filter(Boolean);
+  return parts.length >= 2 ? parts[parts.length - 1] : clean;
+}
+function extractStreet(address) {
+  if (!address) return '';
+  const clean = address.replace(/,?\s*woj\.\s*\S+/i, '').trim();
+  const parts = clean.split(',').map(p => p.trim()).filter(Boolean);
+  return parts.length >= 2 ? parts.slice(0, parts.length - 1).join(', ') : '';
+}
+
+// Short address: "Miasto, ul. Kwiatowa 5" — enough to distinguish same-name clients
+function shortAddr(c) {
+  if (!c.address) return '';
+  const city   = extractCity(c.address);
+  const street = extractStreet(c.address);
+  if (city && street) return `${city}, ${street}`;
+  return city || street || c.address;
+}
+
+// ============================================================
+// REMINDERS
+// ============================================================
+function setReminderFilter(f) {
+  reminderFilter = f;
+  ['all','green','amber','red'].forEach(x => document.getElementById('rf-'+x).classList.remove('btn-primary'));
+  document.getElementById('rf-'+f).classList.add('btn-primary');
+  renderReminders();
+}
+
+function renderReminders() {
+  const activeStatuses = ['Nowy','Lead','W trakcie','Stały klient'];
+  let list = clients
+    .filter(c => activeStatuses.includes(c.status))
+    .map(c => ({ ...c, daysAgo: c.lastContact ? -daysDiff(c.lastContact) : 999 }));
+
+  if (reminderFilter === 'green') list = list.filter(c => c.lastContact && c.daysAgo <= 14);
+  else if (reminderFilter === 'amber') list = list.filter(c => c.lastContact && c.daysAgo > 14 && c.daysAgo <= 28);
+  else if (reminderFilter === 'red') list = list.filter(c => !c.lastContact || c.daysAgo > 28);
+
+  list = list.sort((a,b) => b.daysAgo - a.daysAgo);
+  const el = document.getElementById('reminders-list');
+
+  if (!list.length) {
+    el.innerHTML = '<div class="empty"><div class="empty-icon">✅</div><p>Brak klientów w tym zakresie.</p></div>';
+    return;
+  }
+
+  el.innerHTML = list.map(c => {
+    const lvc = lastVisitColor(c.lastContact, c.status);
+    const noContact = !c.lastContact;
+    const borderColor = noContact || c.daysAgo > 28 ? 'var(--red)' : c.daysAgo > 14 ? 'var(--amber)' : 'var(--green)';
+    const visitBadge = noContact
+      ? `<span style="background:var(--red-light);color:var(--red);border-radius:5px;padding:0.2rem 0.6rem;font-size:0.8rem;font-weight:600;">brak kontaktu</span>`
+      : lvc
+        ? `<span style="background:${lvc.bg};color:${lvc.color};border-radius:5px;padding:0.2rem 0.6rem;font-size:0.8rem;font-weight:600;">${formatDate(c.lastContact)} · ${lvc.label}</span>`
+        : `<span style="color:var(--muted)">${formatDate(c.lastContact)}</span>`;
+    return `<div class="reminder-card" style="border-left-color:${borderColor}">
+      <div style="flex:1;">
+        <div style="display:flex;align-items:center;gap:0.5rem;flex-wrap:wrap;margin-bottom:0.25rem;">
+          <span style="font-weight:700;font-size:1rem;">${escHtml(c.name)}</span>
+          ${statusBadge(c.status)}
+        </div>
+        <div style="font-size:0.8125rem;color:var(--muted);">
+          ${shortAddr(c)?`📍 <strong style="color:var(--slate)">${escHtml(shortAddr(c))}</strong>&nbsp;&nbsp;`:''}${c.phone?`📞 ${escHtml(c.phone)}&nbsp;&nbsp;`:''}${c.delivery?`🚚 ${escHtml(c.delivery)}`:''}
+        </div>
+        ${c.notes?`<div style="font-size:0.8rem;color:var(--muted);margin-top:0.35rem;border-top:1px solid var(--border);padding-top:0.35rem;">📝 ${escHtml(c.notes.slice(0,120))}${c.notes.length>120?'…':''}</div>`:''}
+        <div style="font-size:0.8rem;margin-top:0.4rem;">📅 Ostatnia wizyta: ${visitBadge}</div>
+      </div>
+      <div style="display:flex;gap:0.4rem;flex-direction:column;align-items:flex-end;">
+        <button class="btn btn-primary" style="font-size:0.8rem;padding:0.35rem 0.7rem;" onclick="openEditModal('${c.id}')">✏️ Edytuj</button>
+        <button class="btn btn-secondary" style="font-size:0.8rem;padding:0.35rem 0.7rem;" onclick="markContacted('${c.id}')">✅ Byłem dziś</button>
+      </div>
+    </div>`;
+  }).join('');
+}
+
+function markContacted(id) {
+  const c = clients.find(x=>x.id===id);
+  if (!c) return;
+  const t = today();
+  c.lastContact = t;
+  if (!c.visits) c.visits = [];
+  // Don't duplicate same-day entry
+  if (!c.visits.find(v => v.date === t)) {
+    c.visits.push({ date: t, comment: '', addedAt: new Date().toISOString() });
+    c.visits.sort((a,b) => a.date.localeCompare(b.date));
+  }
+  c.updatedAt = new Date().toISOString();
+  saveClients(clients);
+  renderReminders(); renderDashboard(); renderClients();
+  showToast('✅ Wizyta oznaczona — dzisiaj');
+}
+
+// ============================================================
+// HISTORY MODAL
+// ============================================================
+function openHistoryModal(clientId) {
+  const c = clients.find(x => x.id === clientId);
+  if (!c) return;
+  document.getElementById('history-modal-title').textContent = escHtml(c.name);
+  document.getElementById('history-modal-sub').textContent = `${statusBadge(c.status).replace(/<[^>]+>/g,'')} · ${(c.visits||[]).length} wizyt(y)`;
+  document.getElementById('history-edit-btn').onclick = () => { closeHistoryModal(); openEditModal(clientId); };
+  document.getElementById('history-modal-body').innerHTML = renderVisitHistory(c);
+  document.getElementById('history-modal').classList.add('open');
+}
+
+function closeHistoryModal() {
+  document.getElementById('history-modal').classList.remove('open');
+}
+
+document.getElementById('history-modal').addEventListener('click', e => {
+  if (e.target === document.getElementById('history-modal')) closeHistoryModal();
+});
+
+function renderVisitHistory(c) {
+  const visits = (c.visits || []).slice().reverse();
+  if (!visits.length) {
+    return '<div class="empty"><div class="empty-icon">📋</div><p>Brak zapisanych wizyt.</p></div>';
+  }
+  const realizedLabel = r => r==='tak'?'✅ Tak':r==='nie'?'❌ Nie':r==='czesciowo'?'🟡 Częściowo':'';
+  return `
+    <div style="margin-bottom:1rem;">
+      <div style="font-size:0.8rem;color:var(--muted);margin-bottom:0.75rem;">Wizyty od najnowszej do najstarszej:</div>
+      ${visits.map((v, i) => `
+        <div class="visit-entry ${i===0?'latest':''}">
+          <div class="visit-date">${i===0?'📌 ':''}${formatDate(v.date)}
+            ${v.goal?`<span style="margin-left:0.5rem;background:var(--accent-light);color:var(--accent);border-radius:4px;padding:0.1rem 0.4rem;font-size:0.75rem;font-weight:600;">${escHtml(v.goal)}</span>`:''}
+            ${v.realized?`<span style="margin-left:0.3rem;font-size:0.8rem;">${realizedLabel(v.realized)}</span>`:''}
+          </div>
+          <div class="${v.comment ? 'visit-comment' : 'visit-comment-empty'}">${v.comment ? escHtml(v.comment) : 'brak komentarza'}</div>
+          <div style="margin-top:0.4rem;display:flex;gap:0.5rem;">
+            <button class="btn btn-secondary" style="font-size:0.75rem;padding:0.2rem 0.5rem;" onclick="editVisitInline('${c.id}','${v.date}')">✏️ Edytuj</button>
+            <button class="btn btn-danger" style="font-size:0.75rem;padding:0.2rem 0.5rem;" onclick="deleteVisit('${c.id}','${v.date}')">🗑</button>
+          </div>
+        </div>`).join('')}
+    </div>
+    <div style="border-top:1px solid var(--border);padding-top:1rem;">
+      <div style="font-size:0.7rem;font-weight:700;text-transform:uppercase;letter-spacing:0.08em;color:var(--muted);margin-bottom:0.75rem;">Dodaj wpis ręcznie</div>
+      <div class="grid-2">
+        <div class="form-group"><label>Data</label><input id="hm-date" type="date" value="${today()}"></div>
+        <div class="form-group">
+          <label>Cel wizyty</label>
+          <select id="hm-goal" style="width:100%">
+            <option value="">— brak —</option>
+            ${['Zamówienie','Windykacja','Pozyskanie','Wizyta handlowa','Kontakt'].map(g=>`<option>${g}</option>`).join('')}
+            <option value="__other__">Inne…</option>
+          </select>
+        </div>
+        <div class="form-group">
+          <label>Realizacja</label>
+          <select id="hm-realized" style="width:100%">
+            <option value="">— brak —</option>
+            <option value="tak">✅ Tak</option>
+            <option value="czesciowo">🟡 Częściowo</option>
+            <option value="nie">❌ Nie</option>
+          </select>
+        </div>
+        <div class="form-group"><label>Komentarz</label><input id="hm-comment" type="text" placeholder="Co ustalono..."></div>
+      </div>
+      <button class="btn btn-primary" onclick="addManualVisit('${c.id}')">＋ Dodaj wpis</button>
+    </div>`;
+}
+
+function editVisitInline(clientId, date) {
+  const c = clients.find(x => x.id === clientId);
+  if (!c) return;
+  const v = (c.visits||[]).find(x => x.date === date);
+  if (!v) return;
+  const newComment = prompt(`Komentarz do wizyty ${formatDate(date)}:`, v.comment||'');
+  if (newComment === null) return;
+  v.comment = newComment.trim();
+  saveClients(clients);
+  document.getElementById('history-modal-body').innerHTML = renderVisitHistory(c);
+  showToast('✅ Wpis zaktualizowany');
+}
+
+function deleteVisit(clientId, date) {
+  if (!confirm('Usunąć wpis z dnia ' + formatDate(date) + '?')) return;
+  const c = clients.find(x => x.id === clientId);
+  if (!c) return;
+  c.visits = (c.visits||[]).filter(v => v.date !== date);
+  // Update lastContact to most recent remaining visit
+  c.lastContact = c.visits.length ? c.visits[c.visits.length - 1].date : '';
+  saveClients(clients);
+  document.getElementById('history-modal-body').innerHTML = renderVisitHistory(c);
+  renderClients();
+  showToast('🗑 Wpis usunięty');
+}
+
+function addManualVisit(clientId) {
+  const date = document.getElementById('hm-date').value;
+  let goal = (document.getElementById('hm-goal')?.value||'');
+  if (goal === '__other__') goal = prompt('Podaj cel wizyty:')||'';
+  const realized = document.getElementById('hm-realized')?.value||'';
+  const comment = (document.getElementById('hm-comment').value||'').trim();
+  if (!date) { alert('Wpisz datę.'); return; }
+  const c = clients.find(x => x.id === clientId);
+  if (!c) return;
+  if (!c.visits) c.visits = [];
+  const existing = c.visits.find(v => v.date === date);
+  if (existing) { existing.comment = comment; existing.goal = goal; existing.realized = realized; }
+  else { c.visits.push({ date, goal, realized, comment, addedAt: new Date().toISOString() }); }
+  c.visits.sort((a,b) => a.date.localeCompare(b.date));
+  c.lastContact = c.visits[c.visits.length - 1].date;
+  saveClients(clients);
+  document.getElementById('history-modal-body').innerHTML = renderVisitHistory(c);
+  renderClients(); renderDashboard();
+  showToast('✅ Wpis dodany');
+}
+
+// ============================================================
+// AUTO-PROMOTE: Nowy → Stały klient after 1 calendar month
+// ============================================================
+function autoPromoteClients() {
+  const now = new Date();
+  const todayStr = now.toISOString().slice(0,10);
+  let changed = 0;
+  clients.forEach(c => {
+    if (c.status !== 'Nowy') return;
+    // Use date of first statusHistory entry with status Nowy, fallback to createdAt
+    const nowyEntry = (c.statusHistory||[]).find(h => h.status === 'Nowy');
+    const since = new Date(nowyEntry ? nowyEntry.date : (c.createdAt || c.updatedAt || now));
+    const threshold = new Date(since);
+    threshold.setMonth(threshold.getMonth() + 1);
+    if (now >= threshold) {
+      const history = c.statusHistory || [];
+      history.push({ status: 'Stały klient', prevStatus: 'Nowy', date: todayStr });
+      c.statusHistory = history;
+      c.status = 'Stały klient';
+      c.updatedAt = now.toISOString();
+      changed++;
+    }
+  });
+  if (changed > 0) {
+    saveClients(clients);
+    showToast(`⭐ ${changed} klient(ów) awansowało do "Stały klient"`);
+  }
+}
+
+// ============================================================
+// REPORTS
+// ============================================================
+let _reportPeriod = 'month';
+
+function setReportPeriod(p) {
+  _reportPeriod = p;
+  ['week','month','last'].forEach(x => {
+    const b = document.getElementById('rp-'+x);
+    b.className = x === p ? 'btn btn-primary' : 'btn btn-secondary';
+  });
+  renderReports();
+}
+
+function reportDateRange(period) {
+  const now = new Date();
+  let from, to, label;
+  if (period === 'week') {
+    const day = now.getDay() || 7; // Mon=1
+    from = new Date(now); from.setDate(now.getDate() - day + 1); from.setHours(0,0,0,0);
+    to = new Date(now); to.setHours(23,59,59,999);
+    label = `Tydzień: ${formatDate(from.toISOString().slice(0,10))} – ${formatDate(to.toISOString().slice(0,10))}`;
+  } else if (period === 'month') {
+    from = new Date(now.getFullYear(), now.getMonth(), 1);
+    to = new Date(now); to.setHours(23,59,59,999);
+    label = `Miesiąc: ${from.toLocaleDateString('pl-PL',{month:'long',year:'numeric'})}`;
+  } else {
+    from = new Date(now.getFullYear(), now.getMonth()-1, 1);
+    to = new Date(now.getFullYear(), now.getMonth(), 0, 23,59,59,999);
+    label = `Poprzedni miesiąc: ${from.toLocaleDateString('pl-PL',{month:'long',year:'numeric'})}`;
+  }
+  return { from, to, label };
+}
+
+function renderReports() {
+  const { from, to, label } = reportDateRange(_reportPeriod);
+  document.getElementById('report-period-label').textContent = '📅 ' + label;
+
+  const fromStr = from.toISOString().slice(0,10);
+  const toStr   = to.toISOString().slice(0,10);
+  const now = new Date();
+  const isCurrentMonth = _reportPeriod === 'month';
+  const daysInMonth = new Date(now.getFullYear(), now.getMonth()+1, 0).getDate();
+  const dayOfMonth = now.getDate();
+  const daysLeft = daysInMonth - dayOfMonth;
+  const monthProgress = Math.round(dayOfMonth / daysInMonth * 100);
+
+  // --- Visits in range ---
+  const visitsInRange = [];
+  clients.forEach(c => {
+    (c.visits||[]).forEach(v => {
+      if (v.date >= fromStr && v.date <= toStr) visitsInRange.push({ ...v, client: c });
+    });
+  });
+
+  const visitedIds = new Set(visitsInRange.map(v => v.client.id));
+
+  // --- Split active clients: Stały klient vs reszta ---
+  const stali = clients.filter(c => c.status === 'Stały klient');
+  const wtrakcie = clients.filter(c => ['W trakcie','Lead','Nowy'].includes(c.status));
+
+  const staliVisited   = stali.filter(c => visitedIds.has(c.id));
+  const staliNotVisited = stali.filter(c => !visitedIds.has(c.id));
+  const restVisited    = wtrakcie.filter(c => visitedIds.has(c.id));
+  const restNotVisited = wtrakcie.filter(c => !visitedIds.has(c.id));
+
+  // --- "Bez wizyty" urgency: for current month, factor in days remaining ---
+  function urgencyLabel(c) {
+    if (!isCurrentMonth) return null; // in past periods, always show as missed
+    // For current month: warn only if less than 1/3 of month left (roughly)
+    if (daysLeft <= 10) return { level: 'urgent', text: `${daysLeft}d do końca miesiąca` };
+    if (daysLeft <= 20) return { level: 'warn', text: `${daysLeft}d do końca` };
+    return { level: 'ok', text: `jeszcze ${daysLeft}d` };
+  }
+
+  // --- Clients who had status changed TO Nowy within the period ---
+  const newClients = clients.filter(c => {
+    const history = c.statusHistory || [];
+    // Check if any entry shows status becoming Nowy within the range
+    return history.some(h => h.status === 'Nowy' && h.date >= fromStr && h.date <= toStr);
+  });
+
+  // --- Status breakdown ---
+  const statusCounts = {};
+  clients.forEach(c => { statusCounts[c.status] = (statusCounts[c.status]||0) + 1; });
+
+  // --- Visits per day chart ---
+  const visitsByDay = {};
+  visitsInRange.forEach(v => { visitsByDay[v.date] = (visitsByDay[v.date]||0) + 1; });
+  const sortedDays = Object.keys(visitsByDay).sort();
+  const maxDayCount = Math.max(...Object.values(visitsByDay), 1);
+
+  // --- Top clients ---
+  const visitCountByClient = {};
+  visitsInRange.forEach(v => { visitCountByClient[v.client.id] = (visitCountByClient[v.client.id]||0) + 1; });
+  const topClients = Object.entries(visitCountByClient)
+    .sort((a,b)=>b[1]-a[1]).slice(0,5)
+    .map(([id,count]) => ({ client: clients.find(c=>c.id===id), count }))
+    .filter(x=>x.client);
+
+  // --- Goal statistics ---
+  const goals = ['Zamówienie','Windykacja','Pozyskanie','Wizyta handlowa','Kontakt'];
+  const goalStats = {};
+  goals.forEach(g => { goalStats[g] = { tak:0, nie:0, czesciowo:0, total:0 }; });
+  goalStats['Inne'] = { tak:0, nie:0, czesciowo:0, total:0 };
+  visitsInRange.forEach(v => {
+    if (!v.goal) return;
+    const key = goals.includes(v.goal) ? v.goal : 'Inne';
+    goalStats[key].total++;
+    if (v.realized === 'tak') goalStats[key].tak++;
+    else if (v.realized === 'nie') goalStats[key].nie++;
+    else if (v.realized === 'czesciowo') goalStats[key].czesciowo++;
+  });
+  const usedGoals = [...goals, 'Inne'].filter(g => goalStats[g].total > 0);
+
+  // --- Avg gap ---
+  const gaps = [];
+  clients.filter(c=>(c.visits||[]).length>=2).forEach(c=>{
+    const sorted = [...c.visits].sort((a,b)=>a.date.localeCompare(b.date));
+    for(let i=1;i<sorted.length;i++) gaps.push((new Date(sorted[i].date)-new Date(sorted[i-1].date))/86400000);
+  });
+  const avgGap = gaps.length ? Math.round(gaps.reduce((a,b)=>a+b,0)/gaps.length) : null;
+
+  const statuses = ['Stały klient','W trakcie','Oczekujący','Lead','Nowy','Zamknięty'];
+  const statusColors = { 'Stały klient':'#15803d','W trakcie':'#d97706','Oczekujący':'#64748b','Lead':'#7c3aed','Nowy':'#2563eb','Zamknięty':'#dc2626' };
+
+  function notVisitedRow(c) {
+    const urg = urgencyLabel(c);
+    const lvc = lastVisitColor(c.lastContact, c.status);
+    return `<div style="display:flex;align-items:center;justify-content:space-between;padding:0.4rem 0;border-bottom:1px solid var(--border);gap:0.5rem;">
+      <div>
+        <div style="font-weight:600;font-size:0.82rem;">${escHtml(c.name)}</div>
+        <div style="font-size:0.73rem;color:var(--muted);">${escHtml(shortAddr(c))} · ${c.status}</div>
+      </div>
+      <div style="display:flex;gap:0.3rem;align-items:center;flex-shrink:0;">
+        ${c.lastContact && lvc ? `<span style="background:${lvc.bg};color:${lvc.color};border-radius:5px;padding:0.1rem 0.4rem;font-size:0.73rem;font-weight:600;">${lvc.label}</span>` : ''}
+        ${urg ? `<span style="border-radius:5px;padding:0.1rem 0.4rem;font-size:0.73rem;font-weight:600;background:${urg.level==='urgent'?'var(--red-light)':urg.level==='warn'?'var(--amber-light)':'var(--green-light)'};color:${urg.level==='urgent'?'var(--red)':urg.level==='warn'?'var(--amber)':'var(--green)'};">${urg.text}</span>` : ''}
+      </div>
+    </div>`;
+  }
+
+  document.getElementById('report-content').innerHTML = `
+
+    <!-- KPI ROW -->
+    <div class="stat-grid" style="grid-template-columns:repeat(4,1fr);margin-bottom:1.25rem;">
+      <div class="stat" style="border-top:3px solid var(--accent);">
+        <div class="stat-num" style="color:var(--accent)">${visitsInRange.length}</div>
+        <div class="stat-label">Wizyt w okresie</div>
+      </div>
+      <div class="stat" style="border-top:3px solid #15803d;">
+        <div class="stat-num" style="color:#15803d">${staliVisited.length} / ${stali.length}</div>
+        <div class="stat-label">Stałych odwiedzonych</div>
+      </div>
+      <div class="stat" style="border-top:3px solid #d97706;">
+        <div class="stat-num" style="color:#d97706">${restVisited.length} / ${wtrakcie.length}</div>
+        <div class="stat-label">W trakcie / Lead odwiedzonych</div>
+      </div>
+      <div class="stat" style="border-top:3px solid #2563eb;">
+        <div class="stat-num" style="color:#2563eb">${newClients.length}</div>
+        <div class="stat-label">Nowych klientów w okresie</div>
+      </div>
+    </div>
+
+    ${isCurrentMonth ? `
+    <div class="card" style="padding:1rem 1.25rem;margin-bottom:1.25rem;display:flex;align-items:center;gap:1.5rem;flex-wrap:wrap;">
+      <div>
+        <div style="font-size:0.78rem;color:var(--muted);margin-bottom:0.2rem;">Postęp miesiąca</div>
+        <div style="font-size:1.1rem;font-weight:700;">${dayOfMonth}. dzień · pozostało <span style="color:${daysLeft<=10?'var(--red)':daysLeft<=20?'var(--amber)':'var(--green)'};">${daysLeft} dni</span></div>
+      </div>
+      <div style="flex:1;min-width:120px;">
+        <div style="height:8px;background:var(--border);border-radius:4px;overflow:hidden;">
+          <div style="height:100%;width:${monthProgress}%;background:var(--accent);border-radius:4px;"></div>
+        </div>
+        <div style="font-size:0.73rem;color:var(--muted);margin-top:0.25rem;">${monthProgress}% miesiąca minęło</div>
+      </div>
+      <div style="text-align:right;flex-shrink:0;">
+        <div style="font-size:0.78rem;color:var(--muted);">Stali nieodwiedzeni</div>
+        <div style="font-size:1.3rem;font-weight:800;color:${staliNotVisited.length>0?(daysLeft<=10?'var(--red)':daysLeft<=20?'var(--amber)':'var(--muted)'):'var(--green)'};">${staliNotVisited.length}</div>
+      </div>
+    </div>` : ''}
+
+    <div style="display:grid;grid-template-columns:1fr 1fr;gap:1.25rem;margin-bottom:1.25rem;" class="report-grid">
+
+      <!-- VISITS CHART -->
+      <div class="card" style="padding:1.25rem;">
+        <div class="section-title">Wizyty dzień po dniu</div>
+        ${sortedDays.length === 0
+          ? '<div class="empty" style="padding:1.5rem;"><div class="empty-icon">📭</div><p>Brak wizyt w tym okresie</p></div>'
+          : `<div style="display:flex;align-items:flex-end;gap:3px;height:80px;margin-bottom:0.5rem;">
+              ${sortedDays.map(d=>`<div style="flex:1;display:flex;flex-direction:column;align-items:center;" title="${formatDate(d)}: ${visitsByDay[d]}">
+                <div style="width:100%;background:var(--accent);border-radius:3px 3px 0 0;height:${Math.round((visitsByDay[d]/maxDayCount)*72)+8}px;min-height:8px;"></div>
+              </div>`).join('')}
+            </div>
+            <div style="display:flex;justify-content:space-between;font-size:0.7rem;color:var(--muted);">
+              <span>${formatDate(sortedDays[0])}</span>${sortedDays.length>1?`<span>${formatDate(sortedDays[sortedDays.length-1])}</span>`:''}
+            </div>
+            <div style="font-size:0.78rem;color:var(--muted);margin-top:0.5rem;">Łącznie ${visitsInRange.length} wizyt · max ${maxDayCount}/dzień${avgGap?` · śr. ${avgGap}d między wizytami`:''}</div>`
+        }
+      </div>
+
+      <!-- STATUS BREAKDOWN -->
+      <div class="card" style="padding:1.25rem;">
+        <div class="section-title">Struktura bazy · łącznie ${clients.length}</div>
+        ${statuses.map(s => {
+          const cnt = statusCounts[s]||0;
+          const pct = clients.length ? Math.round(cnt/clients.length*100) : 0;
+          const col = statusColors[s]||'#888';
+          return `<div style="margin-bottom:0.55rem;">
+            <div style="display:flex;justify-content:space-between;font-size:0.82rem;margin-bottom:0.2rem;">
+              <span style="font-weight:600;color:${col}">${s}</span><span style="color:var(--muted)">${cnt} (${pct}%)</span>
+            </div>
+            <div style="height:6px;background:var(--border);border-radius:4px;overflow:hidden;">
+              <div style="height:100%;width:${pct}%;background:${col};border-radius:4px;"></div>
+            </div>
+          </div>`;
+        }).join('')}
+      </div>
+
+      <!-- STALI NIE ODWIEDZENI -->
+      <div class="card" style="padding:1.25rem;">
+        <div class="section-title" style="color:#15803d;">🟢 Stali klienci bez wizyty (${staliNotVisited.length} / ${stali.length})</div>
+        <div style="font-size:0.78rem;color:var(--muted);margin-bottom:0.5rem;">Norma: wizyta raz w miesiącu</div>
+        ${staliNotVisited.length===0
+          ? '<div style="color:#15803d;font-size:0.875rem;">✅ Wszyscy stali klienci odwiedzeni!</div>'
+          : `<div style="max-height:200px;overflow-y:auto;">${staliNotVisited.map(notVisitedRow).join('')}</div>`}
+      </div>
+
+      <!-- RESZTA NIE ODWIEDZENI -->
+      <div class="card" style="padding:1.25rem;">
+        <div class="section-title" style="color:#d97706;">🟡 W trakcie / Lead bez wizyty (${restNotVisited.length} / ${wtrakcie.length})</div>
+        <div style="font-size:0.78rem;color:var(--muted);margin-bottom:0.5rem;">Brak sztywnej normy — informacyjnie</div>
+        ${restNotVisited.length===0
+          ? '<div style="color:#15803d;font-size:0.875rem;">✅ Wszyscy odwiedzeni!</div>'
+          : `<div style="max-height:200px;overflow-y:auto;">${restNotVisited.map(notVisitedRow).join('')}</div>`}
+      </div>
+
+      <!-- TOP CLIENTS -->
+      <div class="card" style="padding:1.25rem;">
+        <div class="section-title">Najczęściej odwiedzani</div>
+        ${topClients.length===0
+          ? '<div style="color:var(--muted);font-size:0.875rem;">Brak wizyt w tym okresie.</div>'
+          : topClients.map((x,i)=>`
+          <div style="display:flex;align-items:center;gap:0.75rem;padding:0.4rem 0;border-bottom:1px solid var(--border);">
+            <div style="font-size:1.1rem;font-weight:800;color:var(--muted);width:1.5rem;text-align:center;">${i+1}</div>
+            <div style="flex:1;">
+              <div style="font-weight:600;font-size:0.875rem;">${escHtml(x.client.name)}</div>
+              <div style="font-size:0.75rem;color:var(--muted);">${escHtml(shortAddr(x.client))}</div>
+            </div>
+            <div style="font-size:1.1rem;font-weight:800;color:var(--accent);">${x.count}×</div>
+          </div>`).join('')}
+      </div>
+
+      <!-- GOAL STATS -->
+      <div class="card" style="padding:1.25rem;">
+        <div class="section-title">Statystyki celów wizyt</div>
+        ${usedGoals.length===0
+          ? '<div style="color:var(--muted);font-size:0.875rem;">Brak wizyt z określonym celem w tym okresie.</div>'
+          : usedGoals.map(g => {
+              const s = goalStats[g];
+              const pctTak = s.total ? Math.round(s.tak/s.total*100) : 0;
+              return `<div style="margin-bottom:0.75rem;">
+                <div style="display:flex;justify-content:space-between;font-size:0.82rem;font-weight:600;margin-bottom:0.2rem;">
+                  <span>${g}</span>
+                  <span style="font-weight:400;color:var(--muted);">${s.total}× · ✅${s.tak} ❌${s.nie}${s.czesciowo?` 🟡${s.czesciowo}`:''}</span>
+                </div>
+                <div style="height:7px;background:var(--border);border-radius:4px;overflow:hidden;display:flex;">
+                  <div style="height:100%;width:${pctTak}%;background:#15803d;border-radius:4px 0 0 4px;"></div>
+                  ${s.czesciowo?`<div style="height:100%;width:${Math.round(s.czesciowo/s.total*100)}%;background:#d97706;"></div>`:''}
+                  ${s.nie?`<div style="height:100%;width:${Math.round(s.nie/s.total*100)}%;background:#dc2626;border-radius:0 4px 4px 0;"></div>`:''}
+                </div>
+              </div>`;
+            }).join('')}
+      </div>
+    </div>
+
+    <!-- VISIT LOG -->
+    <div class="card" style="padding:1.25rem;">
+      <div class="section-title">Dziennik wizyt w okresie</div>
+      ${visitsInRange.length===0
+        ? '<div class="empty" style="padding:1.5rem;"><div class="empty-icon">📭</div><p>Brak wizyt w tym okresie.</p></div>'
+        : `<div class="table-scroll"><table>
+          <thead><tr><th>Data</th><th>Klient</th><th>Status</th><th>Cel</th><th>Realiz.</th><th>Komentarz</th></tr></thead>
+          <tbody>
+          ${[...visitsInRange].sort((a,b)=>b.date.localeCompare(a.date)).map(v=>`<tr>
+            <td style="white-space:nowrap;font-weight:600;">${formatDate(v.date)}</td>
+            <td>
+              <div style="font-weight:600;">${escHtml(v.client.name)}</div>
+              <div style="font-size:0.73rem;color:var(--muted);">${escHtml(shortAddr(v.client))}</div>
+            </td>
+            <td>${statusBadge(v.client.status)}</td>
+            <td style="font-size:0.82rem;">${v.goal?`<span style="background:var(--accent-light);color:var(--accent);border-radius:4px;padding:0.1rem 0.4rem;font-weight:600;">${escHtml(v.goal)}</span>`:'—'}</td>
+            <td style="font-size:0.9rem;">${v.realized==='tak'?'✅':v.realized==='nie'?'❌':v.realized==='czesciowo'?'🟡':'—'}</td>
+            <td style="color:var(--muted);font-size:0.82rem;max-width:200px;">${escHtml(v.comment||'—')}</td>
+          </tr>`).join('')}
+          </tbody>
+        </table></div>`
+      }
+    </div>
+  `;
+}
+
+// ============================================================
+// MAP
+// ============================================================
+let _leafletMap = null;
+let _mapMarkers = [];
+
+const STATUS_COLORS = {
+  'Nowy':         '#2563eb',
+  'Lead':         '#7c3aed',
+  'W trakcie':    '#d97706',
+  'Oczekujący':   '#64748b',
+  'Stały klient': '#15803d',
+  'Zamknięty':    '#dc2626',
+};
+
+function statusColor(status) {
+  return STATUS_COLORS[status] || '#6b7280';
+}
+
+function makePinSvg(color) {
+  // Circle pin with white border
+  const svg = `<svg xmlns="http://www.w3.org/2000/svg" width="28" height="36" viewBox="0 0 28 36">
+    <path d="M14 0C6.268 0 0 6.268 0 14c0 9.333 14 22 14 22S28 23.333 28 14C28 6.268 21.732 0 14 0z" fill="${color}" stroke="white" stroke-width="2"/>
+    <circle cx="14" cy="14" r="5" fill="white"/>
+  </svg>`;
+  return 'data:image/svg+xml;base64,' + btoa(unescape(encodeURIComponent(svg)));
+}
+
+function leafletIcon(color) {
+  return L.icon({
+    iconUrl: makePinSvg(color),
+    iconSize: [28, 36],
+    iconAnchor: [14, 36],
+    popupAnchor: [0, -36],
+  });
+}
+
+async function geocodeAddress(address) {
+  if (!address) return null;
+  const clean = address.replace(/,?\s*woj\.\s*[\w]+/gi, '').trim();
+  const query = clean + ', Polska';
+
+  // Try Photon (Komoot) — no Referer/CORS restrictions, works from file://
+  try {
+    const url = `https://photon.komoot.io/api/?q=${encodeURIComponent(query)}&limit=1&lang=pl&bbox=14.12,49.00,24.15,54.84`;
+    const res = await fetch(url, { mode: 'cors' });
+    const data = await res.json();
+    if (data?.features?.length) {
+      const [lng, lat] = data.features[0].geometry.coordinates;
+      return { lat, lng };
+    }
+  } catch(e) {}
+
+  // Fallback: Nominatim
+  try {
+    const url = `https://nominatim.openstreetmap.org/search?format=json&q=${encodeURIComponent(query)}&limit=1&countrycodes=pl`;
+    const res = await fetch(url, { mode: 'cors', headers: { 'Accept-Language': 'pl' } });
+    const data = await res.json();
+    if (data?.[0]) return { lat: parseFloat(data[0].lat), lng: parseFloat(data[0].lon) };
+  } catch(e) {}
+
+  return null;
+}
+
+function reclearGeoAndRender() {
+  // Clear all cached geocode results so Nominatim re-runs with fixed query
+  clients.forEach(c => { c.lat = null; c.lng = null; });
+  saveClients(clients);
+  // Reset map so it re-initialises tile layer too
+  if (_leafletMap) {
+    _leafletMap.remove();
+    _leafletMap = null;
+    _mapMarkers = [];
+  }
+  showToast('🔄 Czyszczę cache i wczytuję ponownie…');
+  renderMap();
+}
+
+let _mapDataHash = '';  // track if client data changed since last render
+
+async function renderMap() {
+  const mapEl = document.getElementById('map-container');
+  const h = Math.max(window.innerHeight - 56, 300);
+  mapEl.style.height = h + 'px';
+
+  // Build a hash to detect if geocoded data changed
+  const currentHash = clients.filter(c=>c.address).map(c=>`${c.id}:${c.lat}:${c.lng}:${c.status}`).join('|');
+
+  // Init map once
+  if (!_leafletMap) {
+    _leafletMap = L.map('map-container', { tap: false }).setView([52.0, 19.0], 6);
+    L.tileLayer('https://{s}.basemaps.cartocdn.com/rastertiles/voyager/{z}/{x}/{y}{r}.png', {
+      attribution: '© <a href="https://www.openstreetmap.org/copyright">OpenStreetMap</a> © <a href="https://carto.com/">CARTO</a>',
+      subdomains: 'abcd',
+      maxZoom: 19,
+      crossOrigin: 'anonymous',
+      referrerPolicy: 'no-referrer',
+    }).addTo(_leafletMap);
+  }
+
+  // Always fix size after show
+  setTimeout(() => _leafletMap.invalidateSize(), 50);
+  setTimeout(() => _leafletMap.invalidateSize(), 300);
+
+  // If data hasn't changed and markers already drawn — skip full rebuild
+  if (currentHash === _mapDataHash && _mapMarkers.length > 0) {
+    document.getElementById('map-count').textContent =
+      `${_mapMarkers.length} na mapie · ${clients.filter(c=>!c.address).length} bez adresu`;
+    return;
+  }
+
+  // Clear old markers
+  _mapMarkers.forEach(m => m.remove());
+  _mapMarkers = [];
+
+  const withAddress = clients.filter(c => c.address);
+  const noAddress   = clients.filter(c => !c.address);
+  const needGeocode = withAddress.filter(c => !c.lat || !c.lng);
+
+  document.getElementById('map-count').textContent =
+    `${withAddress.length} lokalizacji · ${noAddress.length} bez adresu${needGeocode.length ? ` · pobieranie ${needGeocode.length} adresów…` : ''}`;
+
+  if (!navigator.onLine && needGeocode.length > 0) {
+    document.getElementById('map-no-internet').style.display = 'block';
+  }
+
+  const bounds = [];
+  let geocoded = 0;
+
+  for (const c of withAddress) {
+    let lat = c.lat, lng = c.lng;
+    if (!lat || !lng) {
+      const coords = await geocodeAddress(c.address);
+      geocoded++;
+      document.getElementById('map-count').textContent =
+        `Pobieranie lokalizacji ${geocoded}/${needGeocode.length}…`;
+      if (coords) {
+        lat = coords.lat; lng = coords.lng;
+        const idx = clients.findIndex(x => x.id === c.id);
+        if (idx !== -1) { clients[idx].lat = lat; clients[idx].lng = lng; }
+      }
+      await new Promise(r => setTimeout(r, 400));
+    }
+    if (!lat || !lng) continue;
+
+    const color = statusColor(c.status);
+    const marker = L.marker([lat, lng], { icon: leafletIcon(color) });
+
+    const lvc = lastVisitColor(c.lastContact, c.status);
+    const latestVisit = (c.visits||[]).length ? c.visits[c.visits.length - 1] : null;
+    const visitHtml = c.lastContact
+      ? (lvc ? `<span style="color:${lvc.color};font-weight:600;">${formatDate(c.lastContact)} (${lvc.label})</span>` : formatDate(c.lastContact))
+      : '<span style="color:#dc2626;">brak wizyty</span>';
+    const commentHtml = latestVisit && latestVisit.comment
+      ? `<div style="margin-top:0.3rem;font-size:0.8rem;color:#374151;">💬 ${escHtml(latestVisit.comment)}</div>` : '';
+
+    marker.bindPopup(`
+      <b>${escHtml(c.name)}</b>
+      <span style="display:inline-block;background:${color}22;color:${color};border-radius:4px;padding:0.1rem 0.45rem;font-size:0.75rem;font-weight:600;margin-bottom:0.35rem;">${c.status}</span><br>
+      ${c.address ? `📍 ${escHtml(c.address)}<br>` : ''}
+      ${c.phone ? `📞 ${escHtml(c.phone)}<br>` : ''}
+      ${c.delivery ? `🚚 ${escHtml(c.delivery)}<br>` : ''}
+      📅 Ostatnia wizyta: ${visitHtml}${commentHtml}
+      <div style="margin-top:0.5rem;display:flex;gap:0.4rem;">
+        <button onclick="closeModal();openEditModal('${c.id}')" style="font-size:0.78rem;padding:0.25rem 0.6rem;background:#4f46e5;color:white;border:none;border-radius:5px;cursor:pointer;">✏️ Edytuj</button>
+        <button onclick="openHistoryModal('${c.id}')" style="font-size:0.78rem;padding:0.25rem 0.6rem;background:#f3f4f6;color:#374151;border:1px solid #e5e7eb;border-radius:5px;cursor:pointer;">📋 Historia</button>
+      </div>
+    `);
+    marker.addTo(_leafletMap);
+    _mapMarkers.push(marker);
+    bounds.push([lat, lng]);
+  }
+
+  // Save coords and update hash
+  saveClients(clients);
+  _mapDataHash = clients.filter(c=>c.address).map(c=>`${c.id}:${c.lat}:${c.lng}:${c.status}`).join('|');
+
+  document.getElementById('map-count').textContent =
+    `${bounds.length} na mapie · ${withAddress.length - bounds.length} nieznalezionych · ${noAddress.length} bez adresu`;
+
+  if (bounds.length > 0) {
+    if (bounds.length === 1) _leafletMap.setView(bounds[0], 13);
+    else _leafletMap.fitBounds(bounds, { padding: [50, 50] });
+  }
+}
+
+// ============================================================
+// DATA PAGE
+// ============================================================
+function renderDataPage() {
+  document.getElementById('info-count').textContent = clients.length;
+  const meta = loadMeta();
+  if (meta.lastMod) {
+    const d = new Date(meta.lastMod);
+    document.getElementById('info-lastmod').textContent = d.toLocaleString('pl-PL');
+  }
+}
+
+function exportData() {
+  const json = JSON.stringify({ version:1, exportedAt: new Date().toISOString(), clients }, null, 2);
+  const blob = new Blob([json], { type:'application/json' });
+  const url = URL.createObjectURL(blob);
+  const a = document.createElement('a');
+  a.href = url;
+  a.download = `crm_backup_${today()}.json`;
+  a.click();
+  URL.revokeObjectURL(url);
+  showToast('💾 Plik JSON pobrany');
+}
+
+function importData(e) {
+  const file = e.target.files[0]; if (!file) return;
+  const reader = new FileReader();
+  reader.onload = ev => {
+    try {
+      const parsed = JSON.parse(ev.target.result);
+      const imported = parsed.clients || (Array.isArray(parsed) ? parsed : null);
+      if (!imported) throw new Error('Nieprawidłowy format pliku.');
+      if (!confirm(`Importowanie zastąpi ${clients.length} obecnych klientów ${imported.length} klientami z pliku. Kontynuować?`)) return;
+      clients = migrateStatusHistory(imported);
+      saveClients(clients);
+      renderDataPage(); renderDashboard();
+      showToast(`✅ Zaimportowano ${imported.length} klientów`);
+    } catch(err) { alert('Błąd importu: ' + err.message); }
+  };
+  reader.readAsText(file);
+  e.target.value = '';
+}
+
+function clearAllData() {
+  if (!confirm('Czy na pewno chcesz usunąć WSZYSTKICH klientów? Tej operacji nie można cofnąć.')) return;
+  if (!confirm('Ostatnie ostrzeżenie: wszystkie dane zostaną trwale usunięte.')) return;
+  clients = [];
+  saveClients(clients);
+  renderDataPage(); renderDashboard();
+  showToast('🗑 Baza danych wyczyszczona');
+}
+
+// ============================================================
+// CSV / EXCEL IMPORT
+// ============================================================
+function importCsv(e) {
+  const file = e.target.files[0]; if (!file) return;
+  const isXlsx = /\.xlsx?$/i.test(file.name);
+
+  if (isXlsx && window.XLSX) {
+    // Read .xlsx directly — no manual CSV export needed!
+    const reader = new FileReader();
+    reader.onload = ev => {
+      try {
+        const wb = XLSX.read(new Uint8Array(ev.target.result), { type: 'array' });
+        const ws = wb.Sheets[wb.SheetNames[0]];
+        const rows = XLSX.utils.sheet_to_json(ws, { header: 1, defval: '' });
+        processImportRows(rows, file.name);
+      } catch(err) { alert('Błąd odczytu pliku Excel: ' + err.message); console.error(err); }
+    };
+    reader.readAsArrayBuffer(file);
+  } else {
+    const reader = new FileReader();
+    reader.onload = ev => {
+      try { processImportRows(parseCsv(ev.target.result), file.name); }
+      catch(err) { alert('Błąd wczytywania: ' + err.message); console.error(err); }
+    };
+    reader.readAsText(file, 'UTF-8');
+  }
+  e.target.value = '';
+}
+
+function processImportRows(rows, filename) {
+  if (rows.length < 2) { alert('Plik jest pusty lub ma nieprawidłowy format.'); return; }
+
+  function norm(s) {
+    return String(s||'').trim().toLowerCase()
+      .replace(/ą/g,'a').replace(/ć/g,'c').replace(/ę/g,'e')
+      .replace(/ł/g,'l').replace(/ń/g,'n').replace(/ó/g,'o')
+      .replace(/ś/g,'s').replace(/ź/g,'z').replace(/ż/g,'z')
+      .replace(/\s+/g,' ');
+  }
+
+  const rawHeaders = rows[0].map(h => String(h||'').trim());
+  const headers = rawHeaders.map(norm);
+
+  function col(...aliases) {
+    for (const a of aliases) {
+      const idx = headers.indexOf(norm(a));
+      if (idx !== -1) return idx;
+    }
+    return -1;
+  }
+
+  const iName     = col('nazwa','imie i nazwisko','imię i nazwisko','firma','name','company','klient','kontakt');
+  const iPhone    = col('telefon','tel','phone','mobile','kom','komorkowy','nr telefonu');
+  const iEmail    = col('email','e-mail','mail','adres email');
+  const iNotes    = col('uwagi','notatki','notatka','notes','opis','komentarz');
+  const iStatus   = col('status');
+  const iDelivery = col('dystrybutor','dystrybucja','dostawa','sposob dostawy','delivery','transport');
+  const iCity     = col('adres miasto','miasto','city');
+  const iStreet   = col('adres ulica i numer','ulica i numer','ulica','adres','street','address');
+  const iVoiv     = col('wojewodztwo','region');
+  const iFirst    = col('imie','imię','first name','imie kontaktu');
+  const iLast     = col('nazwisko','last name');
+  const iRole     = col('stanowisko','rola','position','role');
+  const iLastVisit= col('ostatnia wizyta','ostatni kontakt','data wizyty','wizyta','last contact');
+  const iCategory = col('kategoria klienta','kategoria','category');
+
+  if (iName === -1) {
+    alert(`Nie znaleziono kolumny z nazwą klienta.\n\nZnalezione nagłówki:\n${rawHeaders.slice(0,10).join(' | ')}\n\nNagłówek musi brzmieć: "nazwa", "firma" lub "imię i nazwisko".`);
+    return;
+  }
+
+  function mapStatus(raw) {
+    const r = norm(raw||'');
+    if (!r) return 'Zamknięty';                                      // puste → Zamknięty
+    if (r === 'aktywny' || r === 'aktywna') return 'Stały klient';  // Aktywny → Stały klient
+    if (r === 'w toku' || r === 'w trakcie') return 'W trakcie';    // W toku / W trakcie → W trakcie
+    if (r === 'lead') return 'Lead';                                  // Lead → Lead
+    if (r === 'staly klient' || r.includes('stal')) return 'Stały klient';
+    if (r === 'zamkniety' || r.includes('zamkn')) return 'Zamknięty';
+    return 'Zamknięty'; // domyślnie nieznane → Zamknięty
+  }
+
+  const imported = [];
+  for (let i = 1; i < rows.length; i++) {
+    const row = rows[i];
+    const name = String(row[iName]||'').trim();
+    if (!name) continue;
+
+    const city   = iCity   !== -1 ? String(row[iCity]||'').trim()   : '';
+    const street = iStreet !== -1 ? String(row[iStreet]||'').trim() : '';
+    const voiv   = iVoiv   !== -1 ? String(row[iVoiv]||'').trim()   : '';
+    let address = '';
+    if (street && city)  address = `${street}, ${city}`;
+    else if (street)     address = street;
+    else if (city)       address = city;
+    if (voiv && address) address += `, woj. ${voiv}`;
+    else if (voiv)       address = voiv;
+
+    const firstName = iFirst !== -1 ? String(row[iFirst]||'').trim() : '';
+    const lastName  = iLast  !== -1 ? String(row[iLast]||'').trim()  : '';
+    const role      = iRole  !== -1 ? String(row[iRole]||'').trim()  : '';
+    const contact   = [firstName, lastName].filter(Boolean).join(' ');
+    const category  = iCategory !== -1 ? String(row[iCategory]||'').trim() : '';
+
+    let notes = iNotes !== -1 ? String(row[iNotes]||'').trim() : '';
+    const extraParts = [];
+    if (contact) extraParts.push(`Kontakt: ${contact}${role ? ' ('+role+')' : ''}`);
+    if (category) extraParts.push(`Kategoria: ${category}`);
+    if (extraParts.length) notes = extraParts.join(' · ') + (notes ? '\n' + notes : '');
+
+    const status = mapStatus(iStatus !== -1 ? row[iStatus] : '');
+    const lastContact = iLastVisit !== -1 ? parseDateFromCsv(String(row[iLastVisit]||'')) : '';
+    const visits = lastContact ? [{ date: lastContact, comment: `Import: ${filename}`, addedAt: new Date().toISOString() }] : [];
+
+    // Excel sometimes stores phone as number 226581651 → string it and strip .0
+    const rawPhone = iPhone !== -1 ? String(row[iPhone]||'').trim() : '';
+    const phone = rawPhone.replace(/\.0+$/, '').replace(/\s+/g,'');
+
+    imported.push({
+      id: genId(), name, phone,
+      email:    iEmail    !== -1 ? String(row[iEmail]||'').trim()    : '',
+      address, deliveryAddressSame: true, deliveryAddress: address,
+      delivery: iDelivery !== -1 ? String(row[iDelivery]||'').trim() : '',
+      notes, status, lastContact, visits,
+      statusHistory: [{ status, prevStatus: null, date: new Date().toISOString().slice(0,10) }],
+      lat: null, lng: null,
+      createdAt: new Date().toISOString(), updatedAt: new Date().toISOString(),
+    });
+  }
+
+  if (!imported.length) { alert('Nie znaleziono żadnych rekordów do importu.'); return; }
+
+  window._pendingCsvImport = imported;
+  const preview = imported.slice(0,5);
+  document.getElementById('csv-preview').innerHTML = `
+    <div style="background:var(--green-light);color:var(--green);border-radius:8px;padding:0.75rem 1rem;margin-bottom:0.75rem;font-weight:600;">
+      ✅ Wczytano ${imported.length} klientów z: "${filename}". Podgląd (pierwsze ${Math.min(5,imported.length)}):
+    </div>
+    <div class="table-scroll">
+    <table style="font-size:0.8rem;">
+      <thead><tr><th>Nazwa</th><th>Telefon</th><th>E-mail</th><th>Adres</th><th>Status</th><th>Notatki</th></tr></thead>
+      <tbody>${preview.map(c=>`<tr>
+        <td><strong>${escHtml(c.name)}</strong></td>
+        <td>${escHtml(c.phone)||'—'}</td>
+        <td>${escHtml(c.email)||'—'}</td>
+        <td style="font-size:0.75rem;max-width:140px;">${escHtml(c.address)||'—'}</td>
+        <td>${statusBadge(c.status)}</td>
+        <td style="font-size:0.75rem;max-width:150px;color:var(--muted);">${escHtml((c.notes||'').slice(0,80))}</td>
+      </tr>`).join('')}</tbody>
+    </table>
+    </div>
+    <div style="margin-top:0.75rem;display:flex;gap:0.5rem;flex-wrap:wrap;">
+      <button class="btn btn-primary" onclick="confirmCsvImport()">➕ Dodaj ${imported.length} klientów do bazy</button>
+      <button class="btn btn-secondary" onclick="document.getElementById('csv-preview').innerHTML=''">Anuluj</button>
+    </div>`;
+}
+
+function confirmCsvImport() {
+  const data = window._pendingCsvImport;
+  if (!data || !data.length) return;
+
+  // Deduplicate: skip if name+phone already exists
+  function normKey(s) { return String(s||'').toLowerCase().replace(/\s+/g,'').replace(/[^a-z0-9ąćęłńóśźż]/g,''); }
+  const existingKeys = new Set(clients.map(c => normKey(c.name) + '|' + normKey(c.phone)));
+
+  const toAdd = [];
+  const skipped = [];
+  data.forEach(c => {
+    const key = normKey(c.name) + '|' + normKey(c.phone);
+    if (existingKeys.has(key)) skipped.push(c);
+    else toAdd.push(c);
+  });
+
+  clients = [...clients, ...toAdd];
+  saveClients(clients);
+
+  const msg = `✅ Dodano ${toAdd.length} nowych klientów${skipped.length ? `, pominięto ${skipped.length} duplikatów` : ''}.`;
+  document.getElementById('csv-preview').innerHTML = `<div style="background:var(--green-light);color:var(--green);border-radius:8px;padding:0.75rem 1rem;font-weight:600;">${msg}</div>`;
+  renderDataPage(); renderDashboard(); renderClients();
+  showToast(msg);
+  window._pendingCsvImport = null;
+}
+
+function parseCsv(text) {
+  // Strip BOM (Excel on macOS adds this)
+  if (text.charCodeAt(0) === 0xFEFF) text = text.slice(1);
+
+  const firstLine = text.split('\n')[0] || '';
+  // Detect separator: tab wins if present (Excel default on some locales), then semicolon, then comma
+  const sep = firstLine.includes('\t') ? '\t' : firstLine.includes(';') ? ';' : ',';
+
+  return text.split(/\r?\n/).filter(l => l.trim()).map(line => {
+    const cells = []; let cur = ''; let inQ = false;
+    for (let i = 0; i < line.length; i++) {
+      const ch = line[i];
+      if (ch === '"') {
+        if (inQ && line[i+1] === '"') { cur += '"'; i++; }
+        else inQ = !inQ;
+      } else if (ch === sep && !inQ) {
+        cells.push(cur); cur = '';
+      } else {
+        cur += ch;
+      }
+    }
+    cells.push(cur);
+    return cells.map(c => c.trim().replace(/^"|"$/g, ''));
+  });
+}
+
+function parseDateFromCsv(s) {
+  if (!s) return '';
+  // Try DD.MM.YYYY or DD/MM/YYYY or YYYY-MM-DD
+  s = s.trim();
+  let m;
+  if ((m = s.match(/^(\d{1,2})[./](\d{1,2})[./](\d{4})$/))) return `${m[3]}-${m[2].padStart(2,'0')}-${m[1].padStart(2,'0')}`;
+  if ((m = s.match(/^(\d{4})-(\d{2})-(\d{2})$/))) return s;
+  return '';
+}
+
+// ============================================================
+// TAILWIND CONFIG (if CDN loaded)
+// ============================================================
+if (window.tailwind) {
+  tailwind.config = { theme: { extend: {} } };
+}
+
+// ============================================================
+// INIT
+// ============================================================
+autoPromoteClients();
+setReminderFilter('all');
+renderDashboard();
+
+// Re-render clients on orientation/resize so card↔table view switches correctly
+window.addEventListener('resize', () => {
+  const clientsPage = document.getElementById('page-clients');
+  if (clientsPage.classList.contains('active')) renderClients();
+  // Update map height on resize
+  if (_leafletMap) {
+    const h = Math.max(window.innerHeight - 56, 300);
+    document.getElementById('map-container').style.height = h + 'px';
+    _leafletMap.invalidateSize();
+  }
+});
+</script>
+</body>
+</html>
