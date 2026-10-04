@@ -96,9 +96,7 @@ function ymd(d){return d.getFullYear()+'-'+String(d.getMonth()+1).padStart(2,'0'
    if(name=='pin_is_set')return res(true);if(name=='verify_pin')return res('ok');
    if(name=='set_initial_pin')return res(true);if(name=='change_pin')return res('ok');return res(null)}}}};
  try{if(!localStorage.getItem('przepisy.pinHash'))localStorage.setItem('przepisy.pinHash','demo')}catch(e){}
- document.addEventListener('DOMContentLoaded',function(){var b=document.createElement('div');
-  b.style.cssText='position:fixed;left:50%;bottom:calc(10px + env(safe-area-inset-bottom,0px));transform:translateX(-50%);z-index:9999;background:#2b2b2b;color:#fff;padding:7px 14px;border-radius:999px;font:600 12px system-ui,sans-serif;pointer-events:none;opacity:.92;white-space:nowrap';
-  b.textContent='Wersja demo: przykładowe dane, zapis tylko w tej przeglądarce';document.body.appendChild(b)});
+ document.addEventListener('DOMContentLoaded',function(){var b=document.createElement('div');b.setAttribute('role','note');b.style.cssText='background:#fff4d6;color:#4a3500;border-bottom:3px solid #f0b429;padding:calc(12px + env(safe-area-inset-top,0px)) 16px 12px;text-align:center;font:600 15px/1.45 system-ui,-apple-system,Segoe UI,sans-serif;position:relative;z-index:5;';b.innerHTML='<div style="font-size:17px;font-weight:800;letter-spacing:.04em">⚠️ WERSJA DEMO</div><div style="font-weight:500;margin-top:3px">To pokazowa wersja z przykładowymi przepisami, planem i zakupami, a nie pełna aplikacja. Możesz klikać i dodawać dane, ale zapisują się tylko w Twojej przeglądarce. <a href="../" style="color:inherit;text-decoration:underline;white-space:nowrap">Wróć do listy aplikacji</a></div>';document.body.insertBefore(b,document.body.firstChild)});
 })();
 </script>
 

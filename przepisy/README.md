@@ -1,5 +1,7 @@
 # Moje Przepisy (wersja demo)
 
+**⚠️ Wersja demo.** Pokazowa wersja z przykładowymi danymi, nie pełna aplikacja.
+
 Aplikacja do prowadzenia własnej bazy przepisów kulinarnych, działająca jak aplikacja mobilna (PWA):
 - **Przepisy:** kategorie, wyszukiwanie, przeliczanie porcji, nagłówki sekcji w składnikach, zdjęcia, notatki
 - **Tryb gotowania:** krok po kroku z odhaczaniem składników i kroków, ekran nie gaśnie

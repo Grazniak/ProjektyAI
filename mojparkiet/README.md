@@ -1,4 +1,6 @@
-# Mój parkiet (wersja demo)
+# Portfel GPW (wersja demo)
+
+**⚠️ Wersja demo.** Pokazowa wersja z fikcyjnymi danymi, nie pełna aplikacja.
 
 Aplikacja do śledzenia spółek z Giełdy Papierów Wartościowych w Warszawie: portfel, lista obserwowanych, historia transakcji i dywidend, podsumowanie roczne, wiadomości oraz raporty generowane przez AI.
 

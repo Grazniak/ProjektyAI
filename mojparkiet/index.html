@@ -1,5 +1,5 @@
 <!doctype html>
-<html lang="pl"><head><meta charset="utf-8"><title>Mój parkiet (demo)</title>
+<html lang="pl"><head><meta charset="utf-8"><title>Portfel GPW (demo)</title>
 <meta name="viewport" content="width=device-width,initial-scale=1">
 <style>
 :root{--bg:#eef1f7;--card:#fff;--ink:#161b22;--mut:#697386;--line:#e1e5ee;--up:#0e9f6e;--dn:#e0333e;--ac:#5b5bf0;--ac2:#8b5cf6;--sh:0 1px 2px #0000000d,0 8px 24px #0000000a}
@@ -133,9 +133,7 @@ table.sum td:not(:first-child){text-align:right}
    {s:'DBK.WA',n:'Demo Bank SA',lots:[L(300,15,'DBK.WA')],reports:[]},
    {s:'TGR.WA',n:'Testowe Gry SA',lots:[L(200,8,'TGR.WA')],reports:[]}],
    w:[{s:'MTC.WA',n:'Mock Tech SA',lots:[],reports:[]}],reports:[],hist:[]})}
- document.addEventListener('DOMContentLoaded',function(){var b=document.createElement('div');
-  b.style.cssText='position:sticky;top:0;z-index:99;background:#5b5bf0;color:#fff;padding:8px 14px;font:600 13px system-ui,sans-serif;text-align:center';
-  b.innerHTML='Wersja demonstracyjna: fikcyjne spółki i przykładowe dane. Oryginał działa lokalnie z prawdziwymi notowaniami.';document.body.insertBefore(b,document.body.firstChild)});
+ document.addEventListener('DOMContentLoaded',function(){var b=document.createElement('div');b.setAttribute('role','note');b.style.cssText='background:#fff4d6;color:#4a3500;border-bottom:3px solid #f0b429;padding:calc(12px + env(safe-area-inset-top,0px)) 16px 12px;text-align:center;font:600 15px/1.45 system-ui,-apple-system,Segoe UI,sans-serif;position:relative;z-index:5;';b.innerHTML='<div style="font-size:17px;font-weight:800;letter-spacing:.04em">⚠️ WERSJA DEMO</div><div style="font-weight:500;margin-top:3px">To pokazowa wersja z fikcyjnymi spółkami i wygenerowanymi notowaniami, a nie pełna aplikacja. Prawdziwa działa lokalnie z aktualnymi danymi giełdowymi. <a href="../" style="color:inherit;text-decoration:underline;white-space:nowrap">Wróć do listy aplikacji</a></div>';document.body.insertBefore(b,document.body.firstChild)});
 })();
 </script>
 
