@@ -1,0 +1,541 @@
+<!doctype html>
+<html lang="pl"><head><meta charset="utf-8"><title>Mój parkiet (demo)</title>
+<meta name="viewport" content="width=device-width,initial-scale=1">
+<style>
+:root{--bg:#eef1f7;--card:#fff;--ink:#161b22;--mut:#697386;--line:#e1e5ee;--up:#0e9f6e;--dn:#e0333e;--ac:#5b5bf0;--ac2:#8b5cf6;--sh:0 1px 2px #0000000d,0 8px 24px #0000000a}
+@media(prefers-color-scheme:dark){:root{--bg:#0d1117;--card:#161b22;--ink:#e6ebf2;--mut:#8b96a8;--line:#262e3a;--up:#3ddc97;--dn:#ff6b74;--ac:#8b8bff;--ac2:#c084fc;--sh:0 1px 2px #00000030,0 8px 28px #00000040}}
+*{box-sizing:border-box}body{margin:0;background:var(--bg);color:var(--ink);font:15px/1.45 -apple-system,"SF Pro Text",system-ui,sans-serif;font-variant-numeric:tabular-nums}
+main{max-width:1020px;margin:0 auto;padding:28px 20px 60px}
+.top{display:flex;justify-content:space-between;align-items:flex-end;gap:20px;flex-wrap:wrap;margin-bottom:12px;background:linear-gradient(120deg,#4f46e5,#7c3aed 55%,#a855f7);position:relative;overflow:hidden;border-radius:18px;padding:22px 26px;box-shadow:var(--sh)}
+.top::after{content:'';position:absolute;inset:0;background:radial-gradient(circle at 85% -10%,#ffffff33,transparent 55%);pointer-events:none}
+.statbar{background:var(--card);border:1px solid var(--line);border-radius:12px;padding:12px 18px;margin-bottom:16px;display:flex;align-items:center;gap:10px;flex-wrap:wrap;box-shadow:var(--sh)}
+.pill{padding:3px 12px;border-radius:20px;font-weight:700;display:inline-flex;align-items:center;gap:4px}
+.pill.up{background:#0e9f6e1c;color:var(--up)}
+.pill.dn{background:#e0333e1c;color:var(--dn)}
+.total{font:700 42px/1 -apple-system,system-ui,sans-serif;letter-spacing:-.02em;color:#fff}
+.top .sub{color:#ffffffb0}
+.top #upd{color:#ffffff90}
+.top .b{background:#ffffff20;border-color:#ffffff40;color:#fff}
+.top .b:hover{background:#ffffff35;border-color:#fff;color:#fff}
+.sub{color:var(--mut);margin-top:6px}
+.up{color:var(--up)}.dn{color:var(--dn)}
+nav{display:flex;gap:4px;margin:18px auto 16px;background:var(--card);border-radius:12px;padding:4px;box-shadow:var(--sh);width:fit-content;flex-wrap:wrap;justify-content:center}
+nav button{background:none;border:0;padding:9px 16px;font:inherit;color:var(--mut);cursor:pointer;border-radius:9px;font-weight:500}
+nav button.on{color:#fff;background:linear-gradient(135deg,var(--ac),var(--ac2))}
+.add{position:relative;display:flex;gap:8px;margin:0 auto 14px;width:fit-content}
+input{font:inherit;padding:9px 12px;border:1px solid var(--line);border-radius:9px;background:var(--card);color:var(--ink);min-width:0}
+input:focus{outline:2px solid var(--ac);outline-offset:-1px}
+button.b{font:inherit;padding:7px 13px;border:1px solid var(--line);border-radius:9px;background:var(--card);color:var(--ink);cursor:pointer;transition:.12s}
+button.b:hover{border-color:var(--ac);color:var(--ac);box-shadow:0 2px 8px #5b5bf022}
+button.b.on{border-color:var(--ac);color:#fff;background:linear-gradient(135deg,var(--ac),var(--ac2))}
+button.b:disabled{opacity:.5;cursor:default}
+#sug{position:absolute;top:100%;left:0;z-index:5;background:var(--card);border:1px solid var(--line);border-radius:10px;min-width:320px;box-shadow:var(--sh)}
+#sug div{padding:9px 12px;cursor:pointer;border-radius:8px;margin:3px}#sug div:hover{background:var(--bg)}
+.row{background:var(--card);border:1px solid var(--line);border-left:3px solid var(--line);border-radius:14px;margin-bottom:10px;box-shadow:var(--sh);overflow:hidden;transition:transform .12s,box-shadow .12s}
+.row:hover{transform:translateY(-1px);box-shadow:0 2px 6px #0000000f,0 14px 30px #00000012}
+.row.acc-up{border-left-color:var(--up)}.row.acc-dn{border-left-color:var(--dn)}
+.head{display:grid;gap:12px;padding:14px 18px;cursor:pointer;align-items:center}
+.head-p,.sorthead-p{grid-template-columns:1.6fr .9fr .9fr .9fr .9fr}
+.head-w,.sorthead-w{grid-template-columns:1.6fr 1fr 1fr}
+.head:hover{background:var(--bg)}
+.sorthead{display:grid;gap:12px;padding:4px 18px;font-size:12px;color:var(--mut);font-weight:600}
+.sorthead div{cursor:pointer;user-select:none}
+.sorthead div:hover{color:var(--ac)}
+.head small,.mut{color:var(--mut)}.tk{font-weight:600}
+.tag{display:inline-block;font-size:12px;padding:2px 9px;border-radius:20px;background:var(--bg);margin-top:4px;margin-right:4px}
+.tag.d{background:#f0a83422;color:#c07f00}
+.body{padding:0 18px 18px;border-top:1px solid var(--line)}
+.sub2{display:flex;gap:4px;margin:14px 0 10px;flex-wrap:wrap}
+.sub2 button{padding:5px 11px;font-size:13px;border-radius:20px}
+.per{display:flex;gap:6px;margin:12px 0;flex-wrap:wrap;align-items:center}
+.per button{border-radius:20px}
+.chwrap{position:relative;height:240px}
+.chwrap svg{width:100%;height:240px;display:block;overflow:visible}
+.tip{position:absolute;pointer-events:none;background:var(--ink);color:var(--bg);font-size:12px;padding:4px 8px;border-radius:6px;transform:translate(-50%,-115%);white-space:nowrap;opacity:0;transition:opacity .1s;box-shadow:var(--sh)}
+.pos{display:flex;gap:8px;align-items:center;flex-wrap:wrap;margin:10px 0}.pos input{width:110px}
+.rep p{margin:0 0 10px}
+.rep{background:var(--bg);border-radius:10px;padding:14px 16px;margin-top:10px;line-height:1.6}
+.repmeta{font-size:12px;color:var(--mut);margin-top:6px}
+.repitem{padding:12px 0;border-bottom:1px solid var(--line)}
+.repitem:last-child{border:0}
+table.lots,table.sum{width:100%;border-collapse:collapse;margin:8px 0;font-size:14px}
+table.lots td,table.lots th,table.sum td,table.sum th{padding:7px 8px;border-bottom:1px solid var(--line);text-align:left;white-space:nowrap}
+table.lots th,table.sum th{color:var(--mut);font-weight:500;font-size:12px}
+table.sum td:not(:first-child){text-align:right}
+.news h3{margin:0 0 4px;font-size:15px}
+.n{background:var(--card);border:1px solid var(--line);border-radius:10px;padding:11px 15px;margin-bottom:7px;box-shadow:var(--sh)}
+.n a{color:var(--ink);text-decoration:none;font-weight:500}.n a:hover{color:var(--ac)}
+.empty{color:var(--mut);padding:30px 0;text-align:center}
+.divlist{max-height:260px;overflow:auto;margin-top:6px}
+.sugg{display:flex;gap:10px;overflow-x:auto;margin-bottom:14px;padding-bottom:4px}
+.sugg .card{background:var(--card);border:1px solid var(--line);border-radius:12px;padding:12px 14px;min-width:170px;box-shadow:var(--sh)}
+.banner{background:var(--card);border:1px solid var(--line);border-radius:12px;padding:12px 16px;margin-bottom:14px;box-shadow:var(--sh);display:flex;justify-content:space-between;align-items:center;gap:10px}
+</style></head><body><main>
+<div class="top"><div><div class="sub">Wartość portfela</div><div class="total" id="tot">—</div></div>
+<div style="text-align:right"><div class="sub" id="upd"></div><div style="margin-top:8px;display:flex;gap:6px;justify-content:flex-end;flex-wrap:wrap"><button class="b" id="prep">📋 Raport portfela</button><button class="b" id="ex">Eksportuj</button><button class="b" id="im">Importuj</button><input type="file" id="imf" accept=".json" hidden></div></div></div>
+<div class="statbar" id="pl"></div>
+<div id="banner"></div>
+<nav id="nav"></nav>
+<div class="add" id="addbar"><input id="q" placeholder="Szukaj spółki z GPW (np. PKN, CD Projekt, Spar…)" size="42" autocomplete="off"><div id="sug" hidden></div></div>
+<div id="wsugg"></div>
+<div id="list"></div>
+<p class="sub" style="margin-top:30px;font-size:13px">Dane z Yahoo Finance mogą mieć kilkunastominutowe opóźnienie. Raporty AI to przegląd informacyjny, nie rekomendacja inwestycyjna.</p>
+</main>
+<script>
+/* ===== TRYB DEMO: dane przykładowe, brak serwera =====
+   Oryginalna aplikacja pobiera notowania, wiadomości i raporty AI z lokalnego serwera.
+   W tej publicznej wersji zastępuje go ten krótki skrypt generujący dane przykładowe
+   (fikcyjne spółki, wygenerowane notowania). Nic tu nie pochodzi z prawdziwego portfela. */
+(function(){
+ var NOW=Math.floor(Date.now()/1000),DAY=86400;
+ var CO=[{s:'PEN.WA',n:'Przykładowa Energia SA',b:62},{s:'DBK.WA',n:'Demo Bank SA',b:118},{s:'TGR.WA',n:'Testowe Gry SA',b:184},{s:'WZH.WA',n:'Wzorcowy Handel SA',b:47},{s:'MTC.WA',n:'Mock Tech SA',b:29}];
+ function hash(str){var h=2166136261;for(var i=0;i<str.length;i++){h^=str.charCodeAt(i);h=Math.imul(h,16777619)}return h>>>0}
+ function rnd(seed){var a=seed;return function(){a=(a+0x6D2B79F5)|0;var t=Math.imul(a^a>>>15,1|a);t=t+Math.imul(t^t>>>7,61|t)^t;return((t^t>>>14)>>>0)/4294967296}}
+ function base(s){var c=CO.find(function(x){return x.s==s});return c?c.b:50}
+ /* cena dzienna: deterministyczny spacer losowy liczony wstecz od "dziś" */
+ var CACHE={};
+ function series(s){if(CACHE[s])return CACHE[s];var x=base(s),seed=rnd(hash(s)),k=3000,v=x,arr=[];
+  for(var i=k;i>=0;i--){v=v*(1+(seed()-0.485)*0.022);v=Math.max(v,x*0.35);arr[i]=v}
+  var scale=x/arr[0];for(var j=0;j<=k;j++)arr[j]*=scale;return CACHE[s]=arr}
+ function dailyPrice(s,daysAgo){var a=series(s);return a[Math.min(daysAgo,a.length-1)]}
+ function pts(s,fromSec,toSec,step){var out=[];for(var t=fromSec;t<=toSec;t+=step){var da=Math.max(0,Math.round((NOW-t)/DAY));var jitter=(rnd(hash(s+t))()-0.5)*0.004;out.push([t,+(dailyPrice(s,da)*(1+jitter)).toFixed(2)])}return out}
+ function chart(s,r){var from,step=DAY;
+  if(r=='1d'){from=NOW-8*3600;step=900;var d0=dailyPrice(s,1);var o=[];var v=d0;var g=rnd(hash(s+'1d'+Math.floor(NOW/DAY)));for(var t=from;t<=NOW;t+=step){v=v*(1+(g()-0.5)*0.004);o.push([t,+v.toFixed(2)])}
+   return{price:o[o.length-1][1],prev:+d0.toFixed(2),stale:false,pts:o}}
+  var prev=+dailyPrice(s,1).toFixed(2),to=NOW;
+  if(r=='5d')from=NOW-5*DAY;else if(r=='1m')from=NOW-30*DAY;else if(r=='6m')from=NOW-182*DAY;else if(r=='1y')from=NOW-365*DAY;else if(r=='5y'){from=NOW-5*365*DAY;step=3*DAY}else if(r=='max'){from=NOW-8*365*DAY;step=5*DAY}
+  else if(/^yr\d{4}$/.test(r)){var y=+r.slice(2);from=Math.floor(Date.UTC(y,0,1)/1000);to=Math.min(NOW,Math.floor(Date.UTC(y,11,31)/1000))}
+  else from=NOW-30*DAY;
+  var p=pts(s,from,to,step);return{price:+dailyPrice(s,0).toFixed(2),prev:prev,stale:false,pts:p}}
+ function divs(s){var rr=rnd(hash(s+'div'));var amt=+(base(s)*0.025).toFixed(2);var out=[];
+  for(var i=1;i<=4;i++)out.push({date:NOW-i*182*DAY+Math.floor(rr()*20)*DAY,amount:+(amt*(0.9+rr()*0.3)).toFixed(2)});return out}
+ function news(q){var items=[];var hot=hash(q)%3==0;
+  var titles=['Przykładowy nagłówek: nowe wyniki kwartalne (dane demo)','Przykładowy nagłówek: zmiana w zarządzie (dane demo)','Przykładowy nagłówek: komentarz analityków (dane demo)','Przykładowy nagłówek: plany inwestycyjne spółki (dane demo)'];
+  titles.forEach(function(t,i){var d=new Date((NOW-(i*7+3)*3600)*1000).toISOString().replace('T',' ').slice(0,16);items.push({title:t+' – '+q,link:'#',date:d,hot:hot&&i==0})});return items}
+ var REPORT='Wersja demonstracyjna: tutaj w pełnej aplikacji pojawia się raport napisany przez AI na podstawie świeżych nagłówków, zmian kursu i historii dywidend.\n\nPrzykładowy akapit o sytuacji spółki i jej branży. W prawdziwej wersji opisuje, co dzieje się wokół spółki, bez podawania bieżącej ceny.\n\nPrzykładowy akapit o ryzykach na najbliższe tygodnie i czynnikach, które mogą wspierać wzrost.\n\nTo przegląd informacyjny, nie rekomendacja inwestycyjna.';
+ var of=window.fetch.bind(window);
+ window.fetch=function(u,o){
+  if(typeof u=='string'&&u.indexOf('/api/')==0){
+   var url=new URL(u,'http://x'),p=url.pathname,q=url.searchParams,out;
+   if(p=='/api/search'){var t=(q.get('q')||'').toLowerCase();out=CO.filter(function(c){return c.n.toLowerCase().indexOf(t)>-1||c.s.toLowerCase().indexOf(t)>-1}).map(function(c){return{s:c.s,n:c.n}})}
+   else if(p=='/api/chart')out=chart(q.get('s'),q.get('r')||'1d');
+   else if(p=='/api/div'){var d=divs(q.get('s'));out={next:hash(q.get('s'))%2?{date:NOW+20*DAY,amount:+(base(q.get('s'))*0.027).toFixed(2)}:null,recent:d.filter(function(x){return NOW-x.date<31*DAY})}}
+   else if(p=='/api/divhist')out=divs(q.get('s'));
+   else if(p=='/api/news')out=news(q.get('q')||'');
+   else if(p=='/api/ai')out={text:REPORT};
+   else out={error:'demo'};
+   return new Promise(function(res){setTimeout(function(){res({json:function(){return Promise.resolve(out)}})},120)})}
+  return of(u,o)};
+ /* przykładowy portfel przy pierwszym wejściu */
+ if(!localStorage.gpw){var L=function(daysAgo,qty,s){return{date:NOW-daysAgo*DAY,price:+dailyPrice(s,daysAgo).toFixed(2),qty:qty}};
+  localStorage.gpw=JSON.stringify({p:[
+   {s:'PEN.WA',n:'Przykładowa Energia SA',lots:[L(400,40,'PEN.WA'),L(120,25,'PEN.WA')],reports:[]},
+   {s:'DBK.WA',n:'Demo Bank SA',lots:[L(300,15,'DBK.WA')],reports:[]},
+   {s:'TGR.WA',n:'Testowe Gry SA',lots:[L(200,8,'TGR.WA')],reports:[]}],
+   w:[{s:'MTC.WA',n:'Mock Tech SA',lots:[],reports:[]}],reports:[],hist:[]})}
+ document.addEventListener('DOMContentLoaded',function(){var b=document.createElement('div');
+  b.style.cssText='position:sticky;top:0;z-index:99;background:#5b5bf0;color:#fff;padding:8px 14px;font:600 13px system-ui,sans-serif;text-align:center';
+  b.innerHTML='Wersja demonstracyjna: fikcyjne spółki i przykładowe dane. Oryginał działa lokalnie z prawdziwymi notowaniami.';document.body.insertBefore(b,document.body.firstChild)});
+})();
+</script>
+
+<script>
+const $=s=>document.querySelector(s),f=(n,d=2)=>n==null?'—':n.toLocaleString('pl-PL',{minimumFractionDigits:d,maximumFractionDigits:d});
+const zl=n=>f(n)+' zł',pc=n=>(n>=0?'+':'')+f(n)+'%',cl=n=>n>=0?'up':'dn';
+const dt=t=>new Date(t*1000).toLocaleDateString('pl-PL',{day:'numeric',month:'short',year:'numeric'});
+const api=async(u,o)=>(await fetch(u,o)).json();
+const esc=s=>String(s??'').replace(/[&<>"]/g,c=>({'&':'&amp;','<':'&lt;','>':'&gt;','"':'&quot;'}[c]));
+const fmtRep=t=>(t||'').split(/\n{2,}/).map(p=>`<p>${esc(p.trim())}</p>`).join('');
+
+let S=JSON.parse(localStorage.gpw||'{"p":[],"w":[],"reports":[],"hist":[]}');
+S.reports=S.reports||[];S.hist=S.hist||[];
+[...S.p,...S.w].forEach(x=>{if(!x.lots){x.lots=(x.buy&&x.qty)?[{date:Math.floor(Date.now()/1000),price:x.buy,qty:x.qty}]:[];delete x.buy;delete x.qty}
+ x.reports=x.reports||[]});
+let tab='p',D={},open_={},newsCache={},newsShown={},divCache={},expRep={},expDivRow={},histPeriod='6m',bannerKind=null,sortSt={col:null,dir:1},sumSort={col:null,dir:1},newsOrder=JSON.parse(localStorage.gpwNewsOrder||'[]'),newsSortMode=0,yearSel=new Date().getFullYear(),ytdCache={},yearDetailsOpen=false,histFilterSym='all',histFilterPeriod='all',histDetail={},histSort={col:null,dir:1};
+const save=()=>localStorage.gpw=JSON.stringify(S);
+let histBackfilled=false;
+[...S.p,...S.w].forEach(x=>x.lots.forEach(l=>{
+ const has=S.hist.some(h=>h.sym==x.s&&h.type=='kupno'&&h.date==l.date&&h.price==l.price&&h.qty==l.qty);
+ if(!has){S.hist.push({date:l.date,type:'kupno',sym:x.s,name:x.n,qty:l.qty,price:l.price});histBackfilled=true}}));
+if(histBackfilled)save();
+const lotsQty=x=>x.lots.reduce((a,l)=>a+l.qty,0),lotsCost=x=>x.lots.reduce((a,l)=>a+l.qty*l.price,0);
+const ask=p=>api('/api/ai',{method:'POST',body:JSON.stringify({prompt:p})});
+
+const tabLabels={p:'📊 Portfel',s:'🧾 Podsumowanie',h:'📜 Historia',n:'📰 Wiadomości',r:'📄 Raporty',w:'👁 Obserwowane'};
+let navOrder=JSON.parse(localStorage.gpwNavOrder||'null')||['p','s','h','n','r','w'];
+Object.keys(tabLabels).forEach(k=>{if(!navOrder.includes(k))navOrder.push(k)});
+function renderNav(){const nv=$('#nav');
+ nv.innerHTML=navOrder.map(k=>`<button data-t="${k}" draggable="true" class="${tab==k?'on':''}">${tabLabels[k]}</button>`).join('');
+ let dragK=null;
+ nv.querySelectorAll('button').forEach(b=>{
+  b.onclick=()=>{tab=b.dataset.t;renderNav();render()};
+  b.ondragstart=()=>{dragK=b.dataset.t;b.style.opacity=.4};
+  b.ondragend=()=>{b.style.opacity=1};
+  b.ondragover=e=>e.preventDefault();
+  b.ondrop=e=>{e.preventDefault();if(!dragK||dragK==b.dataset.t)return;
+   const from=navOrder.indexOf(dragK),to=navOrder.indexOf(b.dataset.t);
+   navOrder.splice(to,0,navOrder.splice(from,1)[0]);localStorage.gpwNavOrder=JSON.stringify(navOrder);renderNav()}})}
+renderNav();
+let tm;$('#q').oninput=e=>{clearTimeout(tm);const v=e.target.value.trim();if(v.length<2){$('#sug').hidden=true;return}
+ tm=setTimeout(async()=>{const r=await api('/api/search?q='+encodeURIComponent(v));const s=$('#sug');
+ s.innerHTML=r.length?r.map(x=>`<div data-s="${x.s}" data-n="${esc(x.n)}">${esc(x.n)} <small class="mut">${x.s.replace('.WA','')}</small></div>`).join(''):'<div class="mut">Brak wyników na GPW</div>';s.hidden=false;
+ s.querySelectorAll('[data-s]').forEach(d=>d.onclick=()=>addStock(d.dataset.s,d.dataset.n,tab=='w'?'w':'p'))},250)};
+document.addEventListener('click',e=>{if(!e.target.closest('.add'))$('#sug').hidden=true});
+function addStock(s,n,k){if(![...S.p,...S.w].some(x=>x.s==s)){S[k].push({s,n,lots:[],reports:[]});save()}
+ $('#sug').hidden=true;$('#q').value='';load()}
+
+$('#ex').onclick=()=>{const a=document.createElement('a');a.href=URL.createObjectURL(new Blob([JSON.stringify(S,null,1)],{type:'application/json'}));
+ a.download='portfel-'+new Date().toISOString().slice(0,10)+'.json';a.click()};
+$('#im').onclick=()=>$('#imf').click();
+$('#imf').onchange=e=>{const fl=e.target.files[0];if(!fl)return;const r=new FileReader();r.onload=()=>{try{const j=JSON.parse(r.result);
+ if(!Array.isArray(j.p)||!Array.isArray(j.w))throw 0;if(!confirm('Zastąpić obecny portfel zaimportowanym?'))return;
+ S={p:j.p,w:j.w,reports:j.reports||[],hist:j.hist||[]};[...S.p,...S.w].forEach(x=>{x.lots=x.lots||[];x.reports=x.reports||[]});save();load()}catch(x){alert('To nie wygląda na plik portfela z tej aplikacji.')}};r.readAsText(fl);e.target.value=''};
+
+async function load(){
+ await Promise.all([...S.p,...S.w].map(async x=>{try{const c=await api('/api/chart?s='+x.s+'&r=1d');
+  D[x.s]=Object.assign(D[x.s]||{},{price:c.price,prev:c.prev,err:c.price==null,stale:c.stale});
+  if(!D[x.s].div)D[x.s].div=await api('/api/div?s='+x.s)}catch(e){D[x.s]=Object.assign(D[x.s]||{},{err:true})}}));
+ $('#upd').textContent='Odświeżono '+new Date().toLocaleTimeString('pl-PL');render()}
+
+function sortArr(arr){if(!sortSt.col)return arr;
+ const key=x=>{const d=D[x.s]||{},q=lotsQty(x);
+  switch(sortSt.col){case 'name':return x.n.toLowerCase();case 'price':return d.price||0;
+   case 'chg':return d.price&&d.prev?d.price/d.prev-1:0;
+   case 'value':return (d.price||0)*q;
+   case 'gain':return (d.price||0)*q-lotsCost(x);
+   default:return 0}};
+ return [...arr].sort((a,b)=>{const A=key(a),B=key(b);return A<B?-sortSt.dir:A>B?sortSt.dir:0})}
+
+function totals(){let v=0,c=0;S.p.forEach(x=>{const d=D[x.s],q=lotsQty(x);if(d&&d.price&&q){v+=d.price*q;c+=lotsCost(x)}});
+ $('#tot').textContent=zl(v);const p=v-c,pl=$('#pl');
+ pl.innerHTML=c?`<span class="pill ${cl(p)}">${p>=0?'▲':'▼'} ${p>=0?'+':''}${zl(p)} <span style="opacity:.75">(${pc(p/c*100)}%)</span></span> <span class="mut">od momentu zakupu</span>`:'<span class="mut">Dodaj spółki, cenę zakupu i liczbę akcji, żeby zobaczyć wynik</span>';
+ return{v,c}}
+
+function divTags(d){if(!d||!d.div)return'';let h='';const n=d.div.next;
+ if(n)h+=`<span class="tag d">Dywidenda: dzień ex ${dt(n.date)}${n.amount?', ok. '+zl(n.amount)+' / akcję':''}</span>`;
+ d.div.recent.forEach(r=>h+=`<span class="tag">Dywidenda w ostatnim miesiącu: ${dt(r.date)}, ${zl(r.amount)}</span>`);return h}
+
+$('#prep').onclick=async()=>{$('#prep').disabled=true;bannerKind='report';$('#banner').innerHTML='<div class="banner"><span class="mut">Zbieram informacje i przygotowuję przegląd portfela…</span></div>';
+ if(!S.p.length){$('#banner').innerHTML='';alert('Portfel jest pusty.');$('#prep').disabled=false;return}
+ const names=S.p.map(x=>x.n).join(', ');
+ const newsBlocks=await Promise.all(S.p.map(async x=>{let it=newsCache[x.s];if(!it){try{it=await api('/api/news?q='+encodeURIComponent(x.n))}catch(e){it=[]}newsCache[x.s]=it}
+  return `${x.n}:\n${it.map(n=>'- '+n.title).join('\n')||'(brak świeżych nagłówków)'}`}));
+ const r=await ask(`Jesteś doświadczonym, ale przyjaznym analitykiem rynku, piszesz prosty, ludzki przegląd prasy dla znajomego, który posiada akcje spółek z GPW: ${names}.
+Świeże nagłówki dotyczące tych spółek:
+${newsBlocks.join('\n\n')}
+Napisz po polsku wartościowy, konkretny przegląd — NIE opisuj bieżących cen ani dzisiejszej zmiany kursu. Omów każdą spółkę osobno, zaczynając akapit od jej nazwy, oddzielając akapity PUSTĄ LINIĄ. Dla każdej: co się teraz wokół niej dzieje, jakie są konkretne ryzyka na najbliższe tygodnie/miesiące, jakie konkretne czynniki mogą wspierać wzrost. Na końcu osobny akapit o tym, które branże/sektory teraz wyglądają mocno lub słabo. Pisz prostym, ludzkim językiem, jakbyś tłumaczył znajomemu przy kawie — unikaj żargonu i sztywnego stylu korporacyjnego, unikaj ogólników. Maks. 350 słów, zwykły tekst bez markdown. Na końcu jedno zdanie, że to przegląd informacyjny, nie rekomendacja inwestycyjna.`);
+ const txt=r.text||r.error,rep={date:Date.now(),scope:'portfolio',name:'Cały portfel',text:txt};
+ S.reports.unshift(rep);save();$('#prep').disabled=false;
+ $('#banner').innerHTML=`<div class="banner"><span>✅ Raport portfela gotowy.</span><button class="b" id="gorep">Zobacz w Raportach</button></div>`;
+ $('#gorep').onclick=()=>{document.querySelector('nav button[data-t="r"]').click()}};
+
+function render(){const T=totals();const L=$('#list');$('#addbar').hidden=(tab!='p'&&tab!='w');
+ if(tab!='w')$('#wsugg').innerHTML='';
+ if(tab=='n')return news();
+ if(tab=='r')return reportsTab();
+ if(tab=='s')return summaryTab(T);
+ if(tab=='h')return historyTab();
+ const arr=sortArr(S[tab]);
+ if(tab=='w'){renderSugg();}
+ const cols=tab=='p'?[['name','Spółka'],['price','Cena'],['chg','Zmiana dziś'],['value','Wartość'],['gain','Zysk/strata']]:[['name','Spółka'],['price','Cena'],['chg','Zmiana dziś']];
+ const hdr=`<div class="sorthead sorthead-${tab}">${cols.map(([k,l])=>`<div data-sort="${k}">${l}${sortSt.col==k?(sortSt.dir>0?' ▲':' ▼'):''}</div>`).join('')}</div>`;
+ if(!arr.length){L.innerHTML=`<div class="empty">Wyszukaj spółkę powyżej, żeby ją dodać.</div>`;return}
+ L.innerHTML=hdr+arr.map(x=>{const d=D[x.s]||{},ch=d.price&&d.prev?(d.price/d.prev-1)*100:null,o=open_[x.s],q=lotsQty(x);
+  const valGain=tab=='p'?(q&&d.price?`<div>${zl(d.price*q)}</div><div class="${cl(d.price*q-lotsCost(x))}">${d.price*q-lotsCost(x)>=0?'+':''}${zl(d.price*q-lotsCost(x))}<br><small>${pc((d.price*q-lotsCost(x))/lotsCost(x)*100)}</small></div>`:`<div class="mut">brak pozycji</div><div></div>`):'';
+  const rmBtn=tab=='w'?`<button class="b" data-rmquick="${x.s}" style="position:absolute;top:10px;right:12px;padding:3px 9px;font-size:12px" title="Usuń z obserwowanych">✕</button>`:'';
+  return `<div class="row ${ch!=null?(ch>=0?'acc-up':'acc-dn'):''}" style="position:relative" data-s="${x.s}">${rmBtn}<div class="head head-${tab}"><div><span class="tk">${esc(x.n)}</span> <small>${x.s.replace('.WA','')}</small><br>${divTags(d)}</div>
+  <div>${d.price?zl(d.price)+(d.stale?' <small class="mut" title="Spółka jeszcze dziś nie handlowała — to ostatni znany kurs">⏳</small>':''):(d.err?'<span class="dn" title="Nie udało się pobrać danych — sprawdź, czy ticker jest poprawny">❌ błąd</span>':'…')}</div><div class="${ch!=null?cl(ch):''}">${ch!=null?pc(ch):''}<br><small class="mut">dziś</small></div>${valGain}</div>
+  ${o?body(x,o):''}</div>`}).join('');
+ L.querySelectorAll('[data-sort]').forEach(h=>h.onclick=()=>{const k=h.dataset.sort;if(sortSt.col==k)sortSt.dir*=-1;else{sortSt.col=k;sortSt.dir=1}render()});
+ L.querySelectorAll('[data-rmquick]').forEach(b=>b.onclick=e=>{e.stopPropagation();const sy=b.dataset.rmquick;S.w=S.w.filter(y=>y.s!=sy);save();render()});
+ L.querySelectorAll('.head').forEach(h=>h.onclick=()=>{const s=h.parentNode.dataset.s;open_[s]=open_[s]?null:{r:'1d',sec:'ch'};render()});
+ wireRows();
+ Object.keys(open_).forEach(s=>{const o=open_[s];if(!o)return;if(o.sec=='ch')draw(s);if(o.sec=='div')loadDiv(s)})}
+
+function histBlock(x,o){
+ const items=S.hist.map((h,gi)=>({...h,gi})).filter(h=>h.sym==x.s).sort((a,b)=>a.date-b.date);
+ if(!items.length)return'<div class="mut" style="padding:8px 0">Brak historii transakcji.</div>';
+ const ei=o.histEditIdx;
+ return '<div class="divlist">'+items.map(h=>{
+  const gain=h.type=='sprzedaz'&&h.buyPrice!=null?(h.price-h.buyPrice)*h.qty:null;
+  const row=`<div class="n" style="display:flex;justify-content:space-between;align-items:center;gap:10px">
+   <span>${new Date(h.date*1000).toLocaleDateString('pl-PL')} — ${h.type=='kupno'?'🟢 Kupno':'🔴 Sprzedaż'}: ${h.qty} szt. po ${zl(h.price)}${gain!=null?` <span class="${cl(gain)}">(${gain>=0?'+':''}${zl(gain)})</span>`:''}</span>
+   <span><button class="b" data-hedit="${h.gi}" style="padding:3px 9px;font-size:12px">Edytuj</button> <button class="b" data-hdel="${h.gi}" style="padding:3px 9px;font-size:12px">Usuń</button></span></div>`;
+  if(ei!=h.gi)return row;
+  return row+`<div class="pos" style="margin-left:10px">Data <input type="date" id="hdate" value="${new Date(h.date*1000).toISOString().slice(0,10)}"> Cena <input type="number" step="0.01" id="hprice" value="${h.price}"> Ilość <input type="number" id="hqty" value="${h.qty}">${h.type=='sprzedaz'?` Cena zakupu <input type="number" step="0.01" id="hbuyprice" value="${h.buyPrice??''}">`:''}<button class="b" id="hsave">Zapisz</button><button class="b" id="hcancel">Anuluj</button></div>`;
+ }).join('')+'</div>'}
+
+function body(x,o){
+ return `<div class="body">
+ <div class="sub2">${['ch','lots','div','rep'].map(sc=>`<button class="b sub-b ${o.sec==sc?'on':''}" data-sec="${sc}">${{ch:'Wykres',lots:'Zakupy',div:'Dywidendy',rep:'Raporty'}[sc]}</button>`).join('')}</div>
+ ${o.sec=='ch'?`<div class="per">${['1d','5d','1m','6m','1y','5y','max'].map(r=>`<button class="b ${(o.r||'1d')==r?'on':''}" data-r="${r}">${{'1d':'1 dzień','5d':'5 dni','1m':'1 miesiąc','6m':'6 miesięcy','1y':'rok','5y':'5 lat','max':'maksymalny okres'}[r]}</button>`).join('')}</div>
+ <div id="pchg" style="font:600 18px/1 -apple-system,sans-serif;margin:4px 0 10px">…</div>
+ <div class="chwrap"><svg id="ch" viewBox="0 0 900 260" preserveAspectRatio="none"></svg><div class="tip" id="tip"></div></div>`:''}
+ ${o.sec=='lots'?`${lotsQty(x)?`<div class="tag" style="font-size:13px;padding:5px 12px">Śr. kurs zakupu: <b>${zl(lotsCost(x)/lotsQty(x))}</b>${x.lots.length==1?' • kupione '+new Date(x.lots[0].date*1000).toLocaleDateString('pl-PL'):' • '+x.lots.length+' zakupy'}</div>`:''}
+ <table class="lots"><tr><th>Data</th><th>Cena</th><th>Ilość</th><th></th></tr>
+ ${x.lots.map((l,i)=>`<tr><td>${new Date(l.date*1000).toLocaleDateString('pl-PL')}</td><td>${zl(l.price)}</td><td>${l.qty}</td><td><button class="b" data-edit="${i}">Edytuj</button> <button class="b" data-sell="${i}">Sprzedaj</button></td></tr>`).join('')||'<tr><td colspan="4" class="mut">Brak zapisanych zakupów</td></tr>'}</table>
+ ${o.sellIdx!=null?`<div class="pos">Sprzedaż zakupu z ${new Date(x.lots[o.sellIdx].date*1000).toLocaleDateString('pl-PL')} (masz ${x.lots[o.sellIdx].qty} szt.). Ilość do sprzedania <input type="number" id="sqty" value="${x.lots[o.sellIdx].qty}" max="${x.lots[o.sellIdx].qty}" min="1"> Data sprzedaży <input type="date" id="sdate" value="${new Date().toISOString().slice(0,10)}"> Cena sprzedaży <input type="number" step="0.01" id="sprice" value="${D[x.s]&&D[x.s].price||''}"><button class="b" id="sconfirm">Potwierdź sprzedaż</button><button class="b" id="scancel">Anuluj</button></div>`:''}
+ <div class="pos">Data <input type="date" id="ldate" value="${o.editIdx!=null?new Date(x.lots[o.editIdx].date*1000).toISOString().slice(0,10):new Date().toISOString().slice(0,10)}"> Cena <input type="number" step="0.01" id="lprice" value="${o.editIdx!=null?x.lots[o.editIdx].price:''}"> Ilość <input type="number" id="lqty" value="${o.editIdx!=null?x.lots[o.editIdx].qty:''}"><button class="b" id="ladd">${o.editIdx!=null?'Zapisz zmiany':'Dodaj zakup'}</button>${o.editIdx!=null?'<button class="b" id="lcancel">Anuluj</button>':''}</div>
+ <div class="pos"><button class="b" id="rm">Usuń spółkę z listy</button>${tab=='w'?'<button class="b" id="mv">Przenieś do portfela</button>':''}</div>
+ <div style="margin-top:18px;padding-top:14px;border-top:1px solid var(--line)"><b style="font-size:13px">Historia transakcji tej spółki</b>${histBlock(x,o)}</div>`:''}
+ ${o.sec=='div'?`<div class="divlist" id="divlist">Wczytuję historię…</div>`:''}
+ ${o.sec=='rep'?`<button class="b" id="rp">Wygeneruj nowy raport</button><div id="rephist">${x.reports.length?x.reports.map((rr,i)=>repItem(rr,x.s+'-'+i)).join(''):'<div class="mut" style="padding:10px 0">Brak wygenerowanych raportów dla tej spółki.</div>'}</div>`:''}
+ </div>`}
+
+function repItem(rr,key){const open=!!expRep[key];
+ return `<div class="repitem"><b>${esc(rr.name)}</b> <span class="mut" style="font-size:12px">${new Date(rr.date).toLocaleString('pl-PL')}</span>
+ ${open?`<div class="rep">${fmtRep(rr.text)}</div>`:''}
+ <div><button class="b" data-toggle="${key}" style="margin-top:6px">${open?'Zwiń':'Czytaj więcej'}</button></div></div>`}
+
+function wireRows(){$('#list').querySelectorAll('.row').forEach(r=>{const s=r.dataset.s,x=[...S.p,...S.w].find(y=>y.s==s),o=open_[s];if(!o)return;
+ r.querySelectorAll('[data-sec]').forEach(b=>b.onclick=()=>{o.sec=b.dataset.sec;render()});
+ r.querySelectorAll('[data-r]').forEach(b=>b.onclick=()=>{o.r=b.dataset.r;render()});
+ const g=id=>r.querySelector(id);
+ if(g('#ladd'))g('#ladd').onclick=()=>{const price=parseFloat(g('#lprice').value),qty=parseFloat(g('#lqty').value),dv=g('#ldate').value;
+  if(!price||!qty){alert('Podaj cenę i ilość.');return}const rec={date:Math.floor(new Date(dv).getTime()/1000),price,qty};
+  if(o.editIdx!=null){x.lots[o.editIdx]=rec;o.editIdx=null}else{x.lots.push(rec);S.hist.push({date:rec.date,type:'kupno',sym:x.s,name:x.n,qty,price})}
+  save();render()};
+ if(g('#lcancel'))g('#lcancel').onclick=()=>{o.editIdx=null;render()};
+ r.querySelectorAll('[data-edit]').forEach(b=>b.onclick=()=>{o.editIdx=+b.dataset.edit;render()});
+ r.querySelectorAll('[data-sell]').forEach(b=>b.onclick=()=>{o.sellIdx=+b.dataset.sell;render()});
+ if(g('#scancel'))g('#scancel').onclick=()=>{o.sellIdx=null;render()};
+ if(g('#sconfirm'))g('#sconfirm').onclick=()=>{const l=x.lots[o.sellIdx],price=parseFloat(g('#sprice').value),dv=g('#sdate').value,qty=parseFloat(g('#sqty').value);
+  if(!price||!qty){alert('Podaj cenę i ilość sprzedaży.');return}
+  if(qty>l.qty){alert('Nie możesz sprzedać więcej niż posiadasz w tym zakupie ('+l.qty+' szt.).');return}
+  S.hist.push({date:Math.floor(new Date(dv).getTime()/1000),type:'sprzedaz',sym:x.s,name:x.n,qty,price,buyPrice:l.price});
+  if(qty>=l.qty)x.lots.splice(o.sellIdx,1);else l.qty-=qty;
+  o.sellIdx=null;save();render()};
+ if(g('#rm'))g('#rm').onclick=()=>{if(confirm('Usunąć '+x.n+' z listy?')){S.p=S.p.filter(y=>y!=x);S.w=S.w.filter(y=>y!=x);save();render()}};
+ if(g('#mv'))g('#mv').onclick=()=>{S.w=S.w.filter(y=>y!=x);S.p.push(x);save();tab='p';renderNav();render()};
+ if(g('#rp'))g('#rp').onclick=()=>report(x,g('#rephist'));
+ r.querySelectorAll('[data-toggle]').forEach(b=>b.onclick=()=>{expRep[b.dataset.toggle]=!expRep[b.dataset.toggle];render()});
+ r.querySelectorAll('[data-hedit]').forEach(b=>b.onclick=()=>{o.histEditIdx=+b.dataset.hedit;render()});
+ r.querySelectorAll('[data-hdel]').forEach(b=>b.onclick=()=>{if(confirm('Usunąć ten wpis z historii?')){S.hist.splice(+b.dataset.hdel,1);save();render()}});
+ if(g('#hcancel'))g('#hcancel').onclick=()=>{o.histEditIdx=null;render()};
+ if(g('#hsave'))g('#hsave').onclick=()=>{const h=S.hist[o.histEditIdx],dv=g('#hdate').value,price=parseFloat(g('#hprice').value),qty=parseFloat(g('#hqty').value);
+  if(!price||!qty){alert('Podaj cenę i ilość.');return}
+  h.date=Math.floor(new Date(dv).getTime()/1000);h.price=price;h.qty=qty;
+  if(h.type=='sprzedaz'){const bp=g('#hbuyprice');if(bp)h.buyPrice=parseFloat(bp.value)||h.buyPrice}
+  o.histEditIdx=null;save();render()}})}
+
+async function loadDiv(s){const el=document.querySelector(`.row[data-s="${s}"] #divlist`);if(!el)return;
+ try{const h=await api('/api/divhist?s='+s);el.innerHTML=h.length?h.map(v=>`<div class="n">${dt(v.date)} — <b>${zl(v.amount)}</b> / akcję</div>`).join(''):'<div class="mut">Brak danych o wypłaconych dywidendach.</div>'}
+ catch(e){el.innerHTML='<div class="mut">Nie udało się pobrać historii.</div>'}}
+
+function fmtX(r,t){const d=new Date(t*1000);
+ if(r=='1d')return d.toLocaleTimeString('pl-PL',{hour:'2-digit',minute:'2-digit'});
+ if(r=='5d'||r=='1m')return d.toLocaleDateString('pl-PL',{day:'numeric',month:'short'});
+ if(r=='6m'||r=='1y')return d.toLocaleDateString('pl-PL',{month:'short'});
+ return d.toLocaleDateString('pl-PL',{month:'short',year:'2-digit'})}
+
+async function draw(s){const o=open_[s];if(!o||o.sec!='ch')return;const r=o.r||'1d';
+ const row=document.querySelector(`.row[data-s="${s}"]`);if(!row)return;
+ try{const c=await api(`/api/chart?s=${s}&r=${r}`);const p=c.pts;const svg=row.querySelector('#ch');if(!p.length||!svg)return;
+ const W=900,H=260,padL=50,padB=24,padT=10,gw=W-padL,gh=H-padT-padB;
+ const ys=p.map(a=>a[1]),mn=Math.min(...ys),mx=Math.max(...ys),sp=(mx-mn)||1;
+ const X=i=>padL+(p.length>1?i/(p.length-1)*gw:0),Y=v=>padT+gh-(v-mn)/sp*gh;
+ const pts=p.map((a,i)=>`${X(i).toFixed(1)},${Y(a[1]).toFixed(1)}`).join(' ');
+ const ch=(ys[ys.length-1]/ys[0]-1)*100,col=ch>=0?'var(--up)':'var(--dn)';
+ const pchgEl=row.querySelector('#pchg');
+ if(pchgEl){const amt=ys[ys.length-1]-ys[0];pchgEl.innerHTML=`<span style="color:${col}">${pc(ch)}% (${amt>=0?'+':''}${f(amt)} zł)</span> <span class="mut" style="font-size:13px;font-weight:400">— ${{'1d':'dzisiaj','5d':'ostatnie 5 dni','1m':'ostatni miesiąc','6m':'ostatnie 6 miesięcy','1y':'ostatni rok','5y':'ostatnie 5 lat','max':'maksymalny okres'}[r]}</span>`}
+ const buy=(S.p.find(y=>y.s==s)||{lots:[]}).lots,avgbuy=buy.length?buy.reduce((a,l)=>a+l.price*l.qty,0)/buy.reduce((a,l)=>a+l.qty,0):null;
+ const byY=avgbuy&&avgbuy>=mn&&avgbuy<=mx?Y(avgbuy):null;
+ const imn=ys.indexOf(mn),imx=ys.indexOf(mx);
+ const nlabels=Math.min(6,p.length),step=Math.max(1,Math.floor((p.length-1)/(nlabels-1||1)));
+ let xl='';for(let i=0;i<p.length;i+=step)xl+=`<text x="${X(i)}" y="${H-4}" font-size="11" fill="var(--mut)" text-anchor="middle">${fmtX(r,p[i][0])}</text>`;
+ let gl='';[mn,mn+sp*.25,mn+sp*.5,mn+sp*.75,mx].forEach(v=>{gl+=`<line x1="${padL}" x2="${W}" y1="${Y(v)}" y2="${Y(v)}" stroke="var(--line)" stroke-width="1"/><text x="0" y="${Y(v)+4}" font-size="11" fill="var(--mut)">${f(v,1)}</text>`});
+ svg.innerHTML=`${gl}${xl}<polyline fill="none" stroke="${col}" stroke-width="2" points="${pts}"/>
+ ${byY!=null?`<line x1="${padL}" x2="${W}" y1="${byY}" y2="${byY}" stroke="var(--mut)" stroke-dasharray="6 4"/><text x="${W}" y="${byY-4}" font-size="11" fill="var(--mut)" text-anchor="end">śr. zakup ${f(avgbuy,1)}</text>`:''}
+ <circle cx="${X(imx)}" cy="${Y(mx)}" r="3" fill="var(--up)"/><circle cx="${X(imn)}" cy="${Y(mn)}" r="3" fill="var(--dn)"/>
+ <circle id="hov" r="4" fill="${col}" opacity="0"/><rect x="${padL}" y="0" width="${gw}" height="${H}" fill="transparent" id="hoverzone"/>`;
+ const hz=svg.querySelector('#hoverzone'),hov=svg.querySelector('#hov'),tipEl=row.querySelector('.tip');
+ hz.onmousemove=e=>{const rect=svg.getBoundingClientRect(),mx2=(e.clientX-rect.left)/rect.width*W;
+  let i=Math.round((mx2-padL)/gw*(p.length-1));i=Math.max(0,Math.min(p.length-1,i));
+  hov.setAttribute('cx',X(i));hov.setAttribute('cy',Y(p[i][1]));hov.setAttribute('opacity',1);
+  tipEl.style.opacity=1;tipEl.style.left=((e.clientX-rect.left)/rect.width*100)+'%';tipEl.style.top=((Y(p[i][1])/H)*100)+'%';
+  tipEl.textContent=`${fmtX(r,p[i][0])} · ${f(p[i][1])} zł`};
+ hz.onmouseleave=()=>{hov.setAttribute('opacity',0);tipEl.style.opacity=0}}catch(e){}}
+
+async function report(x,el){el.innerHTML='<div class="rep"><p>Zbieram dane i przygotowuję raport…</p></div>';
+ const ps=await Promise.all(['1m','6m','1y','5y'].map(r=>api(`/api/chart?s=${x.s}&r=${r}`).catch(()=>null)));
+ const st=ps.map((c,i)=>c&&c.pts.length?`${['1 mies.','6 mies.','1 rok','5 lat'][i]}: ${pc((c.price/c.pts[0][1]-1)*100)}`:'').join('; ');
+ const nw=await api('/api/news?q='+encodeURIComponent(x.n)).catch(()=>[]),d=D[x.s]||{};
+ const r=await ask(`Jesteś doświadczonym, przyjaznym analitykiem rynku. Spółka: ${x.n} (${x.s}), notowana na GPW. Zmiany kursu w czasie: ${st}. Dywidendy: ${JSON.stringify(d.div)}. Świeże nagłówki: ${nw.map(n=>n.title).join(' | ')||'(brak świeżych nagłówków)'}.
+Napisz po polsku zwięzły, wartościowy przegląd, ludzkim, przystępnym językiem — NIE opisuj bieżącej ceny ani dzisiejszej zmiany. Struktura, każdy punkt to osobny akapit oddzielony pustą linią: 1) co konkretnie dzieje się teraz wokół tej spółki i jej branży, 2) konkretne ryzyka na najbliższe tygodnie/miesiące, 3) konkretne czynniki mogące wspierać wzrost, 4) sytuacja dywidendowa, tylko jeśli to coś wnosi. Unikaj żargonu i ogólników. Maks. 220 słów, zwykły tekst bez markdown. Na końcu jedno zdanie, że to przegląd informacyjny, nie rekomendacja inwestycyjna.`);
+ const txt=r.text||r.error,rep={date:Date.now(),scope:x.s,name:x.n,text:txt};
+ x.reports.unshift(rep);S.reports.unshift(rep);save();
+ expRep[x.s+'-0']=true;render()}
+
+function reportsTab(){const L=$('#list');
+ if(!S.reports.length){L.innerHTML='<div class="empty">Brak wygenerowanych raportów. Otwórz spółkę i kliknij „Raporty”, albo użyj „Raport portfela”.</div>';return}
+ L.innerHTML='<div class="row" style="padding:6px 18px">'+S.reports.map((r,i)=>repItem(r,'g'+i)).join('')+'</div>';
+ L.querySelectorAll('[data-toggle]').forEach(b=>b.onclick=()=>{expRep[b.dataset.toggle]=!expRep[b.dataset.toggle];render()})}
+
+function renderSugg(){const box=$('#wsugg');
+ if(!S.p.length){box.innerHTML='';return}
+ if(S.sugg&&Date.now()-S.sugg.t<86400000){return drawSugg(S.sugg.items)}
+ box.innerHTML='<div class="mut" style="margin-bottom:10px">Szukam spółek powiązanych z Twoim portfelem…</div>';
+ ask(`Portfel inwestora zawiera spółki z GPW: ${S.p.map(x=>x.n).join(', ')}. Zaproponuj 4 INNE spółki notowane na GPW (nie z tej listy), które mogą być ciekawe do obserwowania, bo działają w podobnej lub powiązanej branży, lub są na tapecie inwestorów. Odpowiedz WYŁĄCZNIE w formacie JSON, tablica obiektów: [{"ticker":"XXX","nazwa":"Pełna nazwa","dlaczego":"1 krótkie zdanie"}], bez żadnego innego tekstu.`)
+ .then(r=>{try{const m=(r.text||'').match(/\[[\s\S]*\]/);S.sugg={t:Date.now(),items:JSON.parse(m[0])};drawSugg(S.sugg.items)}catch(e){box.innerHTML=''}})}
+
+function drawSugg(items){const box=$('#wsugg');
+ box.innerHTML='<div class="sugg">'+items.map((it,i)=>`<div class="card"><b>${esc(it.nazwa||it.ticker)}</b><div class="mut" style="font-size:12px;margin:4px 0">${esc(it.dlaczego||'')}</div><button class="b" data-sg="${i}">👁 Obserwuj</button></div>`).join('')+'</div>';
+ box.querySelectorAll('[data-sg]').forEach(b=>b.onclick=async()=>{const it=items[+b.dataset.sg];let sym=it.ticker;if(!sym.endsWith('.WA'))sym+='.WA';
+  addStock(sym,it.nazwa||it.ticker,'w');b.textContent='Dodano ✓';b.disabled=true})}
+
+function divReceivedFor(x,hist){let total=0;const perDiv=[];
+ (hist||[]).forEach(dv=>{const qty=x.lots.filter(l=>l.date<=dv.date).reduce((a,l)=>a+l.qty,0);
+  if(qty>0){total+=qty*dv.amount;perDiv.push({date:dv.date,amount:dv.amount,qty,kwota:qty*dv.amount})}});
+ return{total,perDiv}}
+
+function divReceivedHist(sym,divArr){let total=0;
+ const buys=S.hist.filter(h=>h.sym==sym&&h.type=='kupno'),sells=S.hist.filter(h=>h.sym==sym&&h.type=='sprzedaz');
+ (divArr||[]).forEach(dv=>{const held=buys.filter(h=>h.date<=dv.date).reduce((a,h)=>a+h.qty,0)-sells.filter(h=>h.date<=dv.date).reduce((a,h)=>a+h.qty,0);
+  if(held>0)total+=held*dv.amount});
+ return total}
+
+async function historyTab(){const L=$('#list');
+ const syms=[...new Set(S.hist.map(h=>h.sym))];
+ if(!syms.length){L.innerHTML='<div class="empty">Brak historii — dodaj zakupy, żeby zobaczyć pełne zestawienie.</div>';return}
+ L.innerHTML='<div class="row" style="padding:16px 18px"><div class="mut">Liczę pełną historię…</div></div>';
+ const divs=await Promise.all(syms.map(sym=>divCache[sym]?Promise.resolve(divCache[sym]):api('/api/divhist?s='+sym).then(h=>divCache[sym]=h).catch(()=>[])));
+ let rows=syms.map((sym,i)=>{const buys=S.hist.filter(h=>h.sym==sym&&h.type=='kupno'),sells=S.hist.filter(h=>h.sym==sym&&h.type=='sprzedaz');
+  const name=(buys[0]||sells[0]).name,invested=buys.reduce((a,h)=>a+h.qty*h.price,0),soldAmt=sells.reduce((a,h)=>a+h.qty*h.price,0);
+  const realized=sells.reduce((a,h)=>a+(h.buyPrice!=null?(h.price-h.buyPrice)*h.qty:0),0);
+  const heldQty=buys.reduce((a,h)=>a+h.qty,0)-sells.reduce((a,h)=>a+h.qty,0);
+  const div=divReceivedHist(sym,divs[i]);
+  const curVal=heldQty>0&&D[sym]&&D[sym].price?D[sym].price*heldQty:null;
+  const status=heldQty<=0?'Sprzedana w całości':(sells.length?'Częściowo sprzedana':'W portfelu');
+  const wynik=realized+div+(curVal!=null?curVal-(invested-soldAmt):0);
+  return{sym,name,invested,soldAmt,realized,div,heldQty,curVal,status,wynik}});
+ if(histFilterSym!='all')rows=rows.filter(r=>r.sym==histFilterSym);
+ const days={'1m':30,'3m':91,'6m':182,'1y':365,'all':null}[histFilterPeriod];
+ if(days){const cutoff=Math.floor(Date.now()/1000)-days*86400;
+  const touched=new Set(S.hist.filter(h=>h.date>=cutoff).map(h=>h.sym));
+  rows=rows.filter(r=>touched.has(r.sym))}
+ const hcols=[['name','Spółka'],['status','Status'],['heldQty','Posiadane'],['invested','Zainwestowano'],['soldAmt','Sprzedano za'],['realized','Zysk zreal.'],['div','Dywidendy'],['curVal','Wart. obecna'],['wynik','Wynik razem']];
+ const hkey=r=>histSort.col=='name'?r.name.toLowerCase():histSort.col=='status'?r.status:(r[histSort.col]||0);
+ if(histSort.col)rows.sort((a,b)=>{const A=hkey(a),B=hkey(b);return A<B?-histSort.dir:A>B?histSort.dir:0});
+ const sum=k=>rows.reduce((a,r)=>a+(r[k]||0),0);
+ L.innerHTML=`<div class="row" style="padding:14px 18px"><div style="display:flex;gap:10px;flex-wrap:wrap;align-items:center">
+ <select id="hfsym" style="font:inherit;padding:5px 10px;border:1px solid var(--line);border-radius:8px;background:var(--card);color:var(--ink)"><option value="all">Wszystkie spółki</option>${syms.map(s=>`<option value="${s}" ${histFilterSym==s?'selected':''}>${esc((S.hist.find(h=>h.sym==s)||{}).name||s)}</option>`).join('')}</select>
+ <select id="hfperiod" style="font:inherit;padding:5px 10px;border:1px solid var(--line);border-radius:8px;background:var(--card);color:var(--ink)">${[['all','Cały okres'],['1y','Ostatni rok'],['6m','Ostatnie 6 mies.'],['3m','Ostatnie 3 mies.'],['1m','Ostatni miesiąc']].map(([k,l])=>`<option value="${k}" ${histFilterPeriod==k?'selected':''}>${l}</option>`).join('')}</select></div></div>
+ <div class="row" style="padding:16px 18px;overflow-x:auto"><table class="sum" style="font-size:13px"><tr>${hcols.map(([k,l])=>`<th data-hsort="${k}" style="cursor:pointer;white-space:nowrap">${l}${histSort.col==k?(histSort.dir>0?' ▲':' ▼'):''}</th>`).join('')}</tr>
+ ${rows.map(r=>`<tr style="cursor:pointer" data-hrow="${r.sym}"><td>${esc(r.name)}</td><td><span class="tag${r.status=='W portfelu'?' up':''}" style="white-space:nowrap;${r.status!='W portfelu'?'':'background:#0e9f6e1c;color:var(--up)'}">${r.status}</span></td><td>${r.heldQty>0?r.heldQty:'—'}</td><td>${zl(r.invested)}</td><td>${r.soldAmt?zl(r.soldAmt):'—'}</td><td class="${r.realized?cl(r.realized):''}">${r.realized?((r.realized>=0?'+':'')+zl(r.realized)):'—'}</td><td class="${r.div?'up':''}">${r.div?zl(r.div):'—'}</td><td>${r.curVal!=null?zl(r.curVal):'—'}</td><td class="${cl(r.wynik)}" style="font-weight:700">${r.wynik>=0?'+':''}${zl(r.wynik)}</td></tr>
+ ${histDetail[r.sym]?`<tr><td colspan="9"><div class="divlist">${S.hist.filter(h=>h.sym==r.sym).sort((a,b)=>a.date-b.date).map(h=>{const gain=h.type=='sprzedaz'&&h.buyPrice!=null?(h.price-h.buyPrice)*h.qty:null;
+  return `<div class="n">${new Date(h.date*1000).toLocaleDateString('pl-PL')} — ${h.type=='kupno'?'🟢 Kupno':'🔴 Sprzedaż'}: ${h.qty} szt. po ${zl(h.price)}${gain!=null?` <span class="${cl(gain)}">(${gain>=0?'+':''}${zl(gain)})</span>`:''}</div>`}).join('')}</div></td></tr>`:''}`).join('')}
+ <tr><td><b>Razem</b></td><td></td><td></td><td><b>${zl(sum('invested'))}</b></td><td><b>${zl(sum('soldAmt'))}</b></td><td class="${cl(sum('realized'))}"><b>${sum('realized')>=0?'+':''}${zl(sum('realized'))}</b></td><td class="up"><b>${zl(sum('div'))}</b></td><td><b>${zl(rows.reduce((a,r)=>a+(r.curVal||0),0))}</b></td><td class="${cl(sum('wynik'))}"><b>${sum('wynik')>=0?'+':''}${zl(sum('wynik'))}</b></td></tr>
+ </table></div>
+ <p class="sub" style="font-size:12px">„Wynik razem” = zrealizowany zysk/strata ze sprzedaży + otrzymane dywidendy + niezrealizowany zysk/strata pozycji nadal posiadanych (obecna wartość minus to, co wciąż w nie zainwestowane). Kliknij wiersz spółki, żeby zobaczyć daty i ilości poszczególnych transakcji.</p>`;
+ $('#hfsym').onchange=e=>{histFilterSym=e.target.value;historyTab()};
+ $('#hfperiod').onchange=e=>{histFilterPeriod=e.target.value;historyTab()};
+ L.querySelectorAll('[data-hsort]').forEach(h=>h.onclick=()=>{const k=h.dataset.hsort;if(histSort.col==k)histSort.dir*=-1;else{histSort.col=k;histSort.dir=1}historyTab()});
+ L.querySelectorAll('[data-hrow]').forEach(r=>r.onclick=()=>{const sym=r.dataset.hrow;histDetail[sym]=!histDetail[sym];historyTab()})}
+
+async function summaryTab(T){const L=$('#list');
+ if(!S.p.length){L.innerHTML='<div class="empty">Dodaj spółki do portfela, żeby zobaczyć podsumowanie.</div>';return}
+ L.innerHTML='<div class="row" style="padding:16px 18px"><div class="mut">Ładuję dane…</div></div>';
+ const sold=x=>S.hist.filter(h=>h.sym==x.s&&h.type=='sprzedaz').reduce((a,h)=>a+h.qty,0);
+ const divs=await Promise.all(S.p.map(x=>divCache[x.s]?Promise.resolve(divCache[x.s]):api('/api/divhist?s='+x.s).then(h=>divCache[x.s]=h).catch(()=>[])));
+ const rows=S.p.map((x,i)=>{const d=D[x.s]||{},q=lotsQty(x),val=d.price?d.price*q:0,cost=lotsCost(x),dr=divReceivedFor(x,divs[i]);
+  const avg=q?cost/q:null,dates=x.lots.map(l=>l.date).sort((a,b)=>a-b);
+  return{x,val,cost,q,sold:sold(x),dr,avg,first:dates[0],last:dates[dates.length-1]}});
+ const scols=[['name','Spółka'],['val','Wartość akcji'],['q','Posiadane'],['sold','Sprzedane'],['cost','Koszt akcji'],['avg','Śr. kurs zakupu'],['dr','Dywidendy']];
+ const skey=r=>({name:r.x.n.toLowerCase(),val:r.val,q:r.q,sold:r.sold,cost:r.cost,avg:r.avg||0,dr:r.dr.total}[sumSort.col]);
+ if(sumSort.col)rows.sort((a,b)=>{const A=skey(a),B=skey(b);return A<B?-sumSort.dir:A>B?sumSort.dir:0});
+ const key=x=>'sum-'+x.s;
+ L.innerHTML=`<div class="row" style="padding:16px 18px;overflow-x:auto"><table class="sum"><tr>${scols.map(([k,l])=>`<th data-ssort="${k}" style="cursor:pointer">${l}${sumSort.col==k?(sumSort.dir>0?' ▲':' ▼'):''}</th>`).join('')}<th></th></tr>
+ ${rows.map(rr=>`<tr><td>${esc(rr.x.n)}</td><td>${zl(rr.val)}</td><td>${rr.q}</td><td>${rr.sold||'—'}</td><td>${zl(rr.cost)}</td><td>${rr.avg?zl(rr.avg):'—'}</td><td>${zl(rr.dr.total)}</td><td><button class="b" data-dd="${rr.x.s}">Podgląd</button></td></tr>
+ ${expDivRow[key(rr.x)]?`<tr><td colspan="8"><b style="font-size:13px">Zakupy</b><div class="divlist">${rr.x.lots.length?rr.x.lots.map(l=>`<div class="n">${new Date(l.date*1000).toLocaleDateString('pl-PL')} — ${l.qty} szt. po ${zl(l.price)}</div>`).join(''):'<div class="mut">Brak.</div>'}</div>
+ <b style="font-size:13px">Dywidendy</b><div class="divlist">${rr.dr.perDiv.length?rr.dr.perDiv.map(p=>`<div class="n">${dt(p.date)} — ${p.qty} szt. × ${zl(p.amount)} = <b>${zl(p.kwota)}</b></div>`).join(''):'<div class="mut">Brak dywidend od momentu zakupu.</div>'}</div></td></tr>`:''}`).join('')}
+ <tr><td><b>Razem</b></td><td><b>${zl(T.v)}</b></td><td colspan="6"></td></tr></table></div>
+ <div class="row" style="padding:16px 18px"><div style="display:flex;justify-content:space-between;align-items:center;flex-wrap:wrap;gap:10px"><b>Historia transakcji i dywidend</b>
+ <select id="histperiod" style="font:inherit;padding:5px 10px;border:1px solid var(--line);border-radius:8px;background:var(--card);color:var(--ink)">
+ ${[['1m','Ostatni miesiąc'],['3m','Ostatnie 3 mies.'],['6m','Ostatnie 6 mies.'],['1y','Ostatni rok'],['all','Cały okres']].map(([k,l])=>`<option value="${k}" ${histPeriod==k?'selected':''}>${l}</option>`).join('')}</select></div>
+ <div id="histlist" style="margin-top:8px"></div></div>
+ <div class="row" style="padding:16px 18px" id="yearbox"></div>`;
+ L.querySelectorAll('[data-dd]').forEach(b=>b.onclick=()=>{const k='sum-'+b.dataset.dd;expDivRow[k]=!expDivRow[k];summaryTab(T)});
+ L.querySelectorAll('[data-ssort]').forEach(h=>h.onclick=()=>{const k=h.dataset.ssort;if(sumSort.col==k)sumSort.dir*=-1;else{sumSort.col=k;sumSort.dir=1}summaryTab(T)});
+ $('#histperiod').onchange=e=>{histPeriod=e.target.value;summaryTab(T)};
+ let ev=[...S.hist];
+ rows.forEach(rr=>rr.dr.perDiv.forEach(p=>ev.push({date:p.date,type:'dywidenda',sym:rr.x.s,name:rr.x.n,qty:p.qty,price:p.amount})));
+ ev.sort((a,b)=>b.date-a.date);
+ const days={'1m':30,'3m':91,'6m':182,'1y':365,'all':null}[histPeriod];
+ const cutoff=days?Math.floor(Date.now()/1000)-days*86400:0;
+ const shown=ev.filter(e=>e.date>=cutoff);
+ const icon={kupno:'🟢 Kupno',sprzedaz:'🔴 Sprzedaż',dywidenda:'💰 Dywidenda'};
+ $('#histlist').innerHTML=shown.length?shown.map(e=>`<div class="n">${dt(e.date)} — ${icon[e.type]} <b>${esc(e.name)}</b>: ${e.qty} szt. ${e.type=='dywidenda'?'× '+zl(e.price)+' = '+zl(e.qty*e.price):'po '+zl(e.price)+(e.type=='sprzedaz'&&e.buyPrice?' <span class="'+cl((e.price-e.buyPrice)*e.qty)+'">('+((e.price-e.buyPrice)*e.qty>=0?'+':'')+zl((e.price-e.buyPrice)*e.qty)+')</span>':'')}</div>`).join(''):'<div class="mut">Brak zdarzeń w tym okresie.</div>';
+ renderYearBox(rows);}
+
+async function renderYearBox(rows){const box=$('#yearbox');
+ const yset=new Set([new Date().getFullYear()]);
+ S.hist.forEach(h=>yset.add(new Date(h.date*1000).getFullYear()));
+ rows.forEach(rr=>rr.dr.perDiv.forEach(p=>yset.add(new Date(p.date*1000).getFullYear())));
+ const years=[...yset].sort((a,b)=>b-a);
+ if(!years.includes(yearSel))yearSel=years[0];
+ const yr=yearSel;
+ box.innerHTML=`<div style="display:flex;justify-content:center;align-items:center;gap:10px"><b>Podsumowanie roku</b>
+ <select id="yrsel" style="font:inherit;padding:5px 10px;border:1px solid var(--line);border-radius:8px;background:var(--card);color:var(--ink)">${years.map(y=>`<option value="${y}" ${y==yr?'selected':''}>${y}</option>`).join('')}</select></div>
+ <div class="mut" style="text-align:center;margin-top:8px">Liczę…</div>`;
+ $('#yrsel').onchange=e=>{yearSel=+e.target.value;renderYearBox(rows)};
+ const yr0=Math.floor(new Date(yr,0,1).getTime()/1000),yr1=Math.floor(new Date(yr+1,0,1).getTime()/1000);
+ const boughtY=S.hist.filter(h=>h.type=='kupno'&&h.date>=yr0&&h.date<yr1),soldY=S.hist.filter(h=>h.type=='sprzedaz'&&h.date>=yr0&&h.date<yr1);
+ const boughtSum=boughtY.reduce((a,h)=>a+h.qty*h.price,0),soldSum=soldY.reduce((a,h)=>a+h.qty*h.price,0);
+ const realized=soldY.reduce((a,h)=>a+(h.buyPrice?(h.price-h.buyPrice)*h.qty:0),0);
+ let divY=0,divEvY=[];rows.forEach(rr=>rr.dr.perDiv.forEach(p=>{if(p.date>=yr0&&p.date<yr1){divY+=p.kwota;divEvY.push({date:p.date,type:'dywidenda',name:rr.x.n,qty:p.qty,price:p.amount})}}));
+ const needCharts=rows.some(rr=>rr.x.lots.some(l=>l.date<yr0));
+ let cacheKey=yr+'_'+S.p.map(x=>x.s).join(',');
+ if(needCharts&&!ytdCache[cacheKey])ytdCache[cacheKey]=await Promise.all(rows.map(rr=>api(`/api/chart?s=${rr.x.s}&r=yr${yr}`).catch(()=>null)));
+ if(yearSel!=yr)return;
+ const charts=ytdCache[cacheKey]||[];
+ let priceChange=0;
+ rows.forEach((rr,i)=>{const c=charts[i];const priceStart=c&&c.pts.length?c.pts[0][1]:null;
+  const priceEnd=yr==new Date().getFullYear()?(D[rr.x.s]&&D[rr.x.s].price):(c&&c.pts.length?c.pts[c.pts.length-1][1]:null);
+  if(priceEnd==null)return;
+  rr.x.lots.forEach(l=>{if(l.date>=yr1)return;
+   const baseline=l.date<yr0?priceStart:l.price;
+   if(baseline!=null)priceChange+=l.qty*(priceEnd-baseline)})});
+ const evY=[...boughtY,...soldY,...divEvY].sort((a,b)=>b.date-a.date);
+ const icon={kupno:'🟢 Kupno',sprzedaz:'🔴 Sprzedaż',dywidenda:'💰 Dywidenda'};
+ box.innerHTML=`<div style="display:flex;justify-content:center;align-items:center;gap:10px"><b>Podsumowanie roku</b>
+ <select id="yrsel" style="font:inherit;padding:5px 10px;border:1px solid var(--line);border-radius:8px;background:var(--card);color:var(--ink)">${years.map(y=>`<option value="${y}" ${y==yr?'selected':''}>${y}</option>`).join('')}</select></div>
+ <div style="display:grid;grid-template-columns:repeat(auto-fit,minmax(160px,1fr));gap:14px;margin-top:14px;text-align:center">
+ <div><div class="mut" style="font-size:12px">Zakupy</div><div style="font-size:20px;font-weight:700">${zl(boughtSum)}</div><div class="mut" style="font-size:12px">${boughtY.length} transakcji</div></div>
+ <div><div class="mut" style="font-size:12px">Sprzedaże</div><div style="font-size:20px;font-weight:700">${zl(soldSum)}</div><div class="mut" style="font-size:12px">${soldY.length} transakcji${soldY.length?', zysk '+zl(realized):''}</div></div>
+ <div><div class="mut" style="font-size:12px">Dywidendy</div><div style="font-size:20px;font-weight:700" class="up">${zl(divY)}</div></div>
+ <div><div class="mut" style="font-size:12px">Zmiana wartości posiadanych akcji</div><div style="font-size:20px;font-weight:700" class="${cl(priceChange)}">${priceChange>=0?'+':''}${zl(priceChange)}</div></div>
+ </div>
+ <div style="text-align:center;margin-top:12px"><button class="b" id="ytoggle">${yearDetailsOpen?'Ukryj transakcje':'Pokaż transakcje z tego roku'}</button></div>
+ ${yearDetailsOpen?`<div style="margin-top:14px">${evY.length?evY.map(e=>`<div class="n">${dt(e.date)} — ${icon[e.type]} <b>${esc(e.name)}</b>: ${e.qty} szt. ${e.type=='dywidenda'?'× '+zl(e.price)+' = '+zl(e.qty*e.price):'po '+zl(e.price)+(e.type=='sprzedaz'&&e.buyPrice?' <span class="'+cl((e.price-e.buyPrice)*e.qty)+'">('+((e.price-e.buyPrice)*e.qty>=0?'+':'')+zl((e.price-e.buyPrice)*e.qty)+')</span>':'')}</div>`).join(''):`<div class="mut" style="text-align:center">Brak transakcji w ${yr} roku.</div>`}</div>`:''}`;
+ $('#yrsel').onchange=e=>{yearSel=+e.target.value;renderYearBox(rows)};
+ $('#ytoggle').onclick=()=>{yearDetailsOpen=!yearDetailsOpen;renderYearBox(rows)}}
+
+async function news(){const L=$('#list');const all=[...S.p,...S.w];if(!all.length){L.innerHTML='<div class="empty">Dodaj spółki, żeby zobaczyć wiadomości.</div>';return}
+ L.innerHTML='<div class="row" style="padding:16px 18px"><div class="mut">Szukam wiadomości…</div></div>';
+ const per=await Promise.all(all.map(async x=>{let it=newsCache[x.s];if(!it){try{it=await api('/api/news?q='+encodeURIComponent(x.n))}catch(e){it=[]}newsCache[x.s]=it}
+  let sel=it.filter(n=>n.hot);if(!sel.length)sel=it.slice(0,3);return{sym:x.s,name:x.n,items:sel.slice(0,4)}}));
+ let mkt=newsCache['__mkt'];if(!mkt){try{mkt=await api('/api/news?q='+encodeURIComponent('GPW Warszawa giełda WIG'))}catch(e){mkt=[]}newsCache['__mkt']=mkt}
+ let mktSel=mkt.filter(n=>n.hot);if(!mktSel.length)mktSel=mkt.slice(0,4);
+ let sections=[...per,{sym:'__mkt',name:'Rynek GPW',items:mktSel}];
+ if(newsSortMode){sections.sort((a,b)=>a.name.localeCompare(b.name,'pl')*newsSortMode)}
+ else sections.sort((a,b)=>{const ia=newsOrder.indexOf(a.sym),ib=newsOrder.indexOf(b.sym);
+  if(ia==-1&&ib==-1)return 0;if(ia==-1)return 1;if(ib==-1)return -1;return ia-ib});
+ const item=n=>`<div class="n">${n.hot?'<span style="color:var(--dn);font-weight:700">❗ </span>':''}<a href="${esc(n.link)}" target="_blank" rel="noopener">${esc(n.title)}</a><br><small class="mut">${esc(n.date?.slice(5,16))}</small></div>`;
+ L.innerHTML=`<div class="sub2"><button class="b ${!newsSortMode?'on':''}" id="nsCustom">Kolejność własna</button><button class="b" id="nsAZ">${newsSortMode==1?'A→Z ✓':'Sortuj A→Z'}</button><button class="b" id="nsZA">${newsSortMode==-1?'Z→A ✓':'Sortuj Z→A'}</button></div>
+ <div class="news">`+
+  sections.map(p=>`<div class="ncomp" draggable="true" data-sym="${p.sym}"><h3><span class="mut" style="cursor:grab" title="Przeciągnij, by zmienić kolejność">⠿</span> ${esc(p.name)}</h3>${p.items.length?p.items.map(item).join(''):`<div class="mut" style="margin-bottom:10px">Brak istotnych wiadomości.</div>`}</div>`).join('')+
+  '</div>';
+ $('#nsCustom').onclick=()=>{newsSortMode=0;render()};
+ $('#nsAZ').onclick=()=>{newsSortMode=1;render()};
+ $('#nsZA').onclick=()=>{newsSortMode=-1;render()};
+ let dragSym=null;
+ L.querySelectorAll('.ncomp').forEach(el=>{
+  el.ondragstart=()=>{dragSym=el.dataset.sym;el.style.opacity=.4};
+  el.ondragend=()=>{el.style.opacity=1};
+  el.ondragover=e=>e.preventDefault();
+  el.ondrop=e=>{e.preventDefault();if(!dragSym||dragSym==el.dataset.sym)return;
+   const order=sections.map(x=>x.sym),from=order.indexOf(dragSym),to=order.indexOf(el.dataset.sym);
+   order.splice(to,0,order.splice(from,1)[0]);newsOrder=order;newsSortMode=0;localStorage.gpwNewsOrder=JSON.stringify(order);render()}})}
+
+load();setInterval(load,60000);
+</script></body></html>
