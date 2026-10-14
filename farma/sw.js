@@ -1,4 +1,4 @@
-const C='sakura-farma-v8';
+const C='sakura-farma-v10';
 self.addEventListener('install',e=>{self.skipWaiting();});
 self.addEventListener('activate',e=>{e.waitUntil(caches.keys().then(ks=>Promise.all(ks.filter(k=>k!==C).map(k=>caches.delete(k)))).then(()=>self.clients.claim()));});
 // najpierw sieć (zawsze świeża wersja), pamięć podręczna tylko gdy brak internetu
