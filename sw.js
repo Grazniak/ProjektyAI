@@ -1,8 +1,8 @@
-const C='sakura-farma-v11';
-self.addEventListener('install',e=>{self.skipWaiting();});
-self.addEventListener('activate',e=>{e.waitUntil(caches.keys().then(ks=>Promise.all(ks.filter(k=>k!==C).map(k=>caches.delete(k)))).then(()=>self.clients.claim()));});
-// najpierw sieć (zawsze świeża wersja), pamięć podręczna tylko gdy brak internetu
-self.addEventListener('fetch',e=>{
-  if(e.request.method!=='GET')return;
-  e.respondWith(fetch(e.request).then(r=>{if(r&&r.ok){const cp=r.clone();caches.open(C).then(c=>c.put(e.request,cp));}return r;}).catch(()=>caches.match(e.request)));
-});
+// Ten plik tylko sprząta: wcześniej przez pomyłkę na stronie głównej działał service worker gry.
+// Wyrejestrowuje się i czyści stare pamięci podręczne, żeby strona główna zawsze była aktualna.
+self.addEventListener('install',()=>self.skipWaiting());
+self.addEventListener('activate',e=>{e.waitUntil((async()=>{
+  for(const k of await caches.keys())await caches.delete(k);
+  await self.registration.unregister();
+  const cs=await self.clients.matchAll({type:'window'});cs.forEach(c=>{try{c.navigate(c.url);}catch(_){}});
+})());});
