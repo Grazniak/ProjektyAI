@@ -206,7 +206,7 @@ function sortArr(arr){if(!sortSt.col)return arr;
 
 function totals(){let v=0,c=0;S.p.forEach(x=>{const d=D[x.s],q=lotsQty(x);if(d&&d.price&&q){v+=d.price*q;c+=lotsCost(x)}});
  $('#tot').textContent=zl(v);const p=v-c,pl=$('#pl');
- pl.innerHTML=c?`<span class="pill ${cl(p)}">${p>=0?'▲':'▼'} ${p>=0?'+':''}${zl(p)} <span style="opacity:.75">(${pc(p/c*100)}%)</span></span> <span class="mut">od momentu zakupu</span>`:'<span class="mut">Dodaj spółki, cenę zakupu i liczbę akcji, żeby zobaczyć wynik</span>';
+ pl.innerHTML=c?`<span class="pill ${cl(p)}">${p>=0?'▲':'▼'} ${p>=0?'+':''}${zl(p)} <span style="opacity:.75">(${pc(p/c*100)})</span></span> <span class="mut">od momentu zakupu</span>`:'<span class="mut">Dodaj spółki, cenę zakupu i liczbę akcji, żeby zobaczyć wynik</span>';
  return{v,c}}
 
 function divTags(d){if(!d||!d.div)return'';let h='';const n=d.div.next;
@@ -335,7 +335,7 @@ async function draw(s){const o=open_[s];if(!o||o.sec!='ch')return;const r=o.r||'
  const pts=p.map((a,i)=>`${X(i).toFixed(1)},${Y(a[1]).toFixed(1)}`).join(' ');
  const ch=(ys[ys.length-1]/ys[0]-1)*100,col=ch>=0?'var(--up)':'var(--dn)';
  const pchgEl=row.querySelector('#pchg');
- if(pchgEl){const amt=ys[ys.length-1]-ys[0];pchgEl.innerHTML=`<span style="color:${col}">${pc(ch)}% (${amt>=0?'+':''}${f(amt)} zł)</span> <span class="mut" style="font-size:13px;font-weight:400">— ${{'1d':'dzisiaj','5d':'ostatnie 5 dni','1m':'ostatni miesiąc','6m':'ostatnie 6 miesięcy','1y':'ostatni rok','5y':'ostatnie 5 lat','max':'maksymalny okres'}[r]}</span>`}
+ if(pchgEl){const amt=ys[ys.length-1]-ys[0];pchgEl.innerHTML=`<span style="color:${col}">${pc(ch)} (${amt>=0?'+':''}${f(amt)} zł)</span> <span class="mut" style="font-size:13px;font-weight:400">— ${{'1d':'dzisiaj','5d':'ostatnie 5 dni','1m':'ostatni miesiąc','6m':'ostatnie 6 miesięcy','1y':'ostatni rok','5y':'ostatnie 5 lat','max':'maksymalny okres'}[r]}</span>`}
  const buy=(S.p.find(y=>y.s==s)||{lots:[]}).lots,avgbuy=buy.length?buy.reduce((a,l)=>a+l.price*l.qty,0)/buy.reduce((a,l)=>a+l.qty,0):null;
  const byY=avgbuy&&avgbuy>=mn&&avgbuy<=mx?Y(avgbuy):null;
  const imn=ys.indexOf(mn),imx=ys.indexOf(mx);
