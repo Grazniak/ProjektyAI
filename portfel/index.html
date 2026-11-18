@@ -531,8 +531,8 @@ function startAuto(){
 /* ---- dane przykładowe (daty liczone od dzisiaj, wszystko fikcyjne) ---- */
 function showBanner(){
   const b=document.createElement('div');
-  b.style.cssText='background:#fff4d6;color:#4a3500;border-bottom:2px solid #f0b429;padding:10px 16px;text-align:center;font:500 14px/1.5 system-ui,-apple-system,sans-serif;position:relative;z-index:5';
-  b.innerHTML='<b>Wersja z przykładowymi danymi.</b> Moje prawdziwe dane są prywatne. To, co tu wpiszesz, zapisuje się tylko w Twojej przeglądarce. <a href="../" style="color:inherit;text-decoration:underline;white-space:nowrap">Wróć do listy aplikacji</a>';
+  b.style.cssText='background:#fff4d6;color:#4a3500;border-bottom:2px solid #f0b429;padding:calc(10px + env(safe-area-inset-top,0px)) 16px 10px;text-align:center;font:500 14px/1.5 system-ui,-apple-system,Segoe UI,Roboto,sans-serif;position:relative;z-index:5';
+  b.innerHTML='<b>Wersja z przykładowymi danymi.</b> Moje prawdziwe dane są prywatne. To, co tu wpiszesz, zapisuje się tylko w Twojej przeglądarce. <a href="https://grazniak.github.io/ProjektyAI/" style="color:inherit;text-decoration:underline;white-space:nowrap">Wróć do listy aplikacji</a>';
   document.body.insertBefore(b,document.body.firstChild);
 }
 function seedDemo(){
