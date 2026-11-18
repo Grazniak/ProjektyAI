@@ -100,7 +100,6 @@ function ymd(d){return d.getFullYear()+'-'+String(d.getMonth()+1).padStart(2,'0'
 })();
 </script>
 
-
 <style>
 :root{
   --bg:#F2F2F7; --card:#FFFFFF; --card2:#F2F2F7; --text:#111114; --muted:#6E6E73;
@@ -154,7 +153,7 @@ svg{display:block}
 .chip.on span{color:rgba(255,255,255,.8)}
 
 /* ---------- Recipe list ---------- */
-.list{display:grid;grid-template-columns:repeat(auto-fill,minmax(min(280px,100%),1fr));gap:12px;padding:4px 0 calc(170px + var(--sb))}
+.list{display:grid;grid-template-columns:repeat(auto-fill,minmax(min(280px,100%),1fr));gap:12px;padding:4px 0 100px}
 .card{display:flex;align-items:center;gap:14px;text-align:left;background:var(--card);border-radius:var(--r);padding:14px;box-shadow:var(--shadow);transition:transform .15s;min-width:0}
 .card:active{transform:scale(.98)}
 .card-emoji{width:56px;height:56px;border-radius:16px;background:var(--accent-soft);display:grid;place-items:center;font-size:28px;flex:none}
@@ -207,7 +206,12 @@ svg{display:block}
 .panel-head{display:flex;align-items:center;justify-content:space-between;gap:10px;flex-wrap:wrap;margin-bottom:8px}
 .scaled-note{font-size:12px;color:var(--muted);margin:-2px 0 6px}
 .ing-list{list-style:none;margin:0;padding:0}
-.ing-list li{display:flex;gap:12px;padding:10px 0;border-bottom:.5px solid var(--line)}
+.ing-list li{display:flex;gap:12px;padding:10px 0;border-bottom:.5px solid var(--line);align-items:center}
+.ing-list li .ing-n{flex:1;min-width:0}
+.ing-add{flex:none;width:32px;height:32px;border-radius:50%;background:var(--accent-soft);color:var(--accent);font-size:20px;font-weight:700;display:grid;place-items:center;transition:background .2s,transform .15s}
+.ing-add:active{transform:scale(.88)}
+.ing-add.on{background:var(--ok);color:#fff;font-size:15px}
+.add-all{display:flex;align-items:center;gap:6px;color:var(--accent);font-weight:700;font-size:14px;padding:6px 0 2px}
 .ing-list li:last-child{border-bottom:0}
 .ing-list li.ing-head,.c-ings li.ing-head{display:block;border-bottom:0;padding:16px 0 2px;font-size:13px;text-transform:uppercase;letter-spacing:.05em;color:var(--muted);font-weight:800;cursor:default;opacity:1;text-decoration:none}
 .ing-list li.ing-head:first-child,.c-ings li.ing-head:first-child{padding-top:0}
@@ -336,7 +340,7 @@ svg{display:block}
 @media (max-width:340px){.cook-quick span{display:none}.cook-quick{padding:0 10px}}
 
 /* ---------- Zakładki (dolny pasek) ---------- */
-.tabbar{position:fixed;left:0;right:0;bottom:0;z-index:30;display:flex;justify-content:center;gap:4px;
+.tabbar{position:relative;flex:none;z-index:30;display:flex;justify-content:center;gap:4px;
   padding:6px max(10px,var(--sr)) calc(6px + var(--sb)) max(10px,var(--sl));
   background:var(--bg);background:color-mix(in srgb,var(--card) 86%,transparent);
   -webkit-backdrop-filter:saturate(180%) blur(20px);backdrop-filter:saturate(180%) blur(20px);border-top:.5px solid var(--line)}
@@ -350,7 +354,13 @@ svg{display:block}
 .view.on{display:block}
 .fab{bottom:calc(var(--sb) + 84px)}
 .toast{bottom:calc(var(--sb) + 150px)}
-.page-pad{padding-bottom:calc(120px + var(--sb))}
+.page-pad{padding-bottom:40px}
+/* Stały układ: przewija się tylko środek, pasek zakładek zawsze na dole (bez błędów iOS z position:fixed) */
+html,body{height:100%;overflow:hidden}
+#app{position:fixed;inset:0;display:flex;flex-direction:column}
+#app.hidden{display:none!important}
+#scroller{flex:1;min-height:0;overflow-y:auto;-webkit-overflow-scrolling:touch;overscroll-behavior-y:contain}
+.sh-qty .q-add{width:auto;display:block;height:32px;padding:0 12px;border-radius:16px;background:var(--card2);color:var(--accent);font-weight:700;font-size:13px;white-space:nowrap}
 
 /* ---------- Plan posiłków ---------- */
 .week-nav{display:flex;align-items:center;gap:8px;margin:4px 0 12px}
@@ -371,8 +381,13 @@ svg{display:block}
 .meal .mi{width:40px;height:40px;border-radius:12px;background:var(--accent-soft);display:grid;place-items:center;font-size:20px;flex:none;overflow:hidden}
 .meal .mi img{width:100%;height:100%;object-fit:cover}
 .meal .mt{flex:1;min-width:0}
-.meal .mt b{display:block;font-size:15px;line-height:1.25;overflow:hidden;text-overflow:ellipsis;white-space:nowrap}
+.meal .mt b{display:-webkit-box;-webkit-line-clamp:2;-webkit-box-orient:vertical;font-size:15px;line-height:1.25;overflow:hidden}
 .meal .mt small{color:var(--muted);font-size:12px}
+.day-actions{display:flex;align-items:center;gap:8px}
+.shop-mini{height:34px;padding:0 12px;border-radius:17px;background:var(--accent-soft);color:var(--accent);font-weight:700;font-size:13px;white-space:nowrap}
+.meal-btn{flex:none;width:34px;height:34px;border-radius:50%;background:var(--card2);color:var(--accent);font-size:16px;display:grid;place-items:center}
+.meal-btn:active,.shop-mini:active{transform:scale(.92)}
+@media (max-width:360px){.shop-mini{font-size:0;padding:0;width:34px}.shop-mini::before{content:"🛒";font-size:16px}.meal-btn,.meal-del{width:30px;height:30px}}
 .meal-del{flex:none;width:34px;height:34px;border-radius:50%;background:var(--card2);color:var(--muted);font-size:22px;line-height:1;display:grid;place-items:center}
 .meal-del:active{background:rgba(255,59,48,.15);color:var(--danger)}
 .toast.has-act{pointer-events:auto;display:flex;align-items:center;justify-content:space-between;gap:14px;padding:8px 8px 8px 18px;width:min(360px,calc(100vw - 32px));text-align:left}
@@ -499,6 +514,7 @@ svg{display:block}
 
 <!-- ============ MAIN APP ============ -->
 <div id="app" class="hidden">
+  <div id="scroller">
   <div id="offlineBar" class="offline-bar hidden">Tryb offline — tylko odczyt</div>
   <div id="viewRecipes" class="view on">
   <header class="topbar">
@@ -578,6 +594,7 @@ svg{display:block}
     </main>
   </div>
 
+  </div>
   <nav class="tabbar" id="tabbar">
     <button data-act="tab" data-tab="recipes" class="on"><span class="tb-wrap"><span class="ti">📖</span></span>Przepisy</button>
     <button data-act="tab" data-tab="plan"><span class="tb-wrap"><span class="ti">📅</span></span>Plan</button>
@@ -1285,7 +1302,8 @@ function renderDetail(){
       <section class="panel">
         <div class="panel-head"><h2>Składniki</h2>${stepperHTML()}</div>
         ${scaled ? `<div class="scaled-note">Przeliczono z ${r.servings} na ${servings} ${plural(servings, 'porcję', 'porcje', 'porcji')}</div>` : ''}
-        ${r.ingredients.length ? `<ul class="ing-list">${r.ingredients.map(i => i.header ? `<li class="ing-head">${esc(i.name)}</li>` : `<li><span class="amt">${ingAmountHTML(i)}</span><span>${esc(i.name)}</span></li>`).join('')}</ul>` : '<p class="muted">Brak składników.</p>'}
+        ${r.ingredients.length ? `<ul class="ing-list">${r.ingredients.map((i, idx) => i.header ? `<li class="ing-head">${esc(i.name)}</li>` : `<li><span class="amt">${ingAmountHTML(i)}</span><span class="ing-n">${esc(i.name)}</span>${ingAddBtn(i, idx)}</li>`).join('')}</ul>
+        <button class="add-all" data-act="ing-add-all">🛒 Dodaj wszystkie do listy zakupów</button>` : '<p class="muted">Brak składników.</p>'}
       </section>
       <section class="panel">
         <h2>Przygotowanie</h2>
@@ -2019,7 +2037,7 @@ function setTab(t){
   ['recipes', 'plan', 'shop'].forEach(n => $('#view' + n[0].toUpperCase() + n.slice(1)).classList.toggle('on', n === t));
   [...$('#tabbar').children].forEach(b => b.classList.toggle('on', b.dataset.tab === t));
   $('.fab').classList.toggle('hidden', t !== 'recipes');
-  window.scrollTo(0, 0);
+  $('#scroller').scrollTop = 0;
   if (t === 'plan') {
     renderPlan(); loadPlanShop();
     const td = $('#days .day.today');
@@ -2049,13 +2067,15 @@ function renderPlan(){
     count += meals.length;
     html += `<div class="day ${ds === todayS ? 'today' : ''} ${ds < todayS ? 'past' : ''}">
       <div class="day-head"><div><b>${DAY_NAMES[d.getDay()]}</b><small>${shortDate(d)}</small>${ds === todayS ? '<span class="today-tag">DZIŚ</span>' : ''}</div>
-        <button class="add-mini" data-act="plan-add" data-day="${ds}" aria-label="Dodaj posiłek">+</button></div>
+        <div class="day-actions">${meals.some(p => p.recipe_id && recipeById(p.recipe_id)) ? `<button class="shop-mini" data-act="plan-day-shop" data-day="${ds}" aria-label="Składniki z tego dnia do zakupów">🛒 Do zakupów</button>` : ''}
+        <button class="add-mini" data-act="plan-add" data-day="${ds}" aria-label="Dodaj posiłek">+</button></div></div>
       ${meals.length ? meals.map(p => {
         const r = p.recipe_id && recipeById(p.recipe_id);
-        return `<div class="meal" data-act="plan-edit" data-id="${esc(p.id)}">
+        return `<div class="meal" data-act="plan-open" data-id="${esc(p.id)}">
           <div class="mi">${mealIcon(p)}</div>
           <div class="mt"><span class="slot">${esc(p.slot)}</span><b>${esc(r ? r.title : p.title || 'Posiłek')}</b>${r ? `<small>${p.servings} ${plural(p.servings, 'porcja', 'porcje', 'porcji')}</small>` : ''}</div>
-          ${r && (r.steps.length || r.ingredients.length) ? `<button class="cook-quick" data-act="plan-cook" data-id="${esc(p.id)}" aria-label="Gotuj">🔥</button>` : ''}
+          ${r && r.ingredients.length ? `<button class="meal-btn" data-act="plan-meal-shop" data-id="${esc(p.id)}" aria-label="Składniki do zakupów">🛒</button>` : ''}
+          <button class="meal-btn" data-act="plan-edit" data-id="${esc(p.id)}" aria-label="Edytuj posiłek">✎</button>
           <button class="meal-del" data-act="plan-del" data-id="${esc(p.id)}" aria-label="Usuń z planu">×</button>
         </div>`; }).join('') : '<div class="none">Nic nie zaplanowano</div>'}
     </div>`;
@@ -2178,9 +2198,11 @@ function updateGenInfo(){
     ? `${m.length} ${plural(m.length, 'posiłek', 'posiłki', 'posiłków')} z przepisów: ${names.slice(0, 4).join(', ')}${names.length > 4 ? ` i ${names.length - 4} innych` : ''}`
     : 'Brak zaplanowanych posiłków z przepisami w tym okresie. Dodaj je w zakładce Plan.';
 }
-function buildFromPlan(){
+function buildFromPlan(){ return buildFromMeals(mealsInRange()); }
+function buildFromMeals(meals){
   const map = new Map();
-  for (const p of mealsInRange()) {
+  for (const p of meals) {
+    if (!p.recipe_id || !recipeById(p.recipe_id)) continue;
     const r = recipeById(p.recipe_id);
     const f = (p.servings || r.servings) / (r.servings || 1);
     for (const i of r.ingredients) {
@@ -2222,6 +2244,36 @@ function generateShop(replace){
   renderShop();
   toast(replace ? `Nowa lista: ${added} ${plural(added, 'produkt', 'produkty', 'produktów')}` : `Dodano ${added}, połączono ${merged}`);
 }
+/* dopisanie składników z wybranych posiłków planu (dzień albo jeden posiłek) z możliwością cofnięcia */
+function addMealsToShop(meals, label){
+  const items = buildFromMeals(meals);
+  if (!items.length) { toast('Brak składników do dodania'); return; }
+  const before = JSON.parse(JSON.stringify(shop));
+  const addedIds = [], changed = [];
+  let base = Date.now();
+  for (const it of items) {
+    const ex = shop.find(s => !s.checked && itemKey(s.name, s.unit) === itemKey(it.name, it.unit));
+    if (ex) {
+      if (it.amount != null) ex.amount = roundAmt((ex.amount || 0) + it.amount, ex.unit);
+      ex.sources = [...new Set([...(ex.sources ? ex.sources.split(' · ') : []), ...it.sources.split(' · ')])].join(' · ');
+      changed.push(shopRow(ex));
+    } else {
+      const row = shopRow({ ...it, id: uid(), checked: false, sort: base++ });
+      shop.push(row); changed.push(row); addedIds.push(row.id);
+    }
+  }
+  saveShop(); queue({ t: 'up', tb: 'shopping_items', row: changed });
+  renderShop();
+  if (navigator.vibrate) navigator.vibrate(15);
+  toast(`🛒 ${label}: ${items.length} ${plural(items.length, 'składnik', 'składniki', 'składników')} na liście`, 'Cofnij', () => {
+    const restore = before.filter(b => changed.some(c => c.id === b.id));
+    shop = before; saveShop();
+    if (addedIds.length) queue({ t: 'del', tb: 'shopping_items', ids: addedIds });
+    if (restore.length) queue({ t: 'up', tb: 'shopping_items', row: restore.map(shopRow) });
+    renderShop(); toast('Cofnięto');
+  });
+}
+
 function renderShop(){
   if (!$('#shopList')) return;
   const todo = shop.filter(s => !s.checked).sort((a, b) => a.sort - b.sort);
@@ -2230,7 +2282,9 @@ function renderShop(){
   const row = s => `<li class="sh-item ${s.checked ? 'done' : ''}">
       <button class="chk" data-act="sh-toggle" data-id="${esc(s.id)}" aria-label="Zaznacz"><svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="4" stroke-linecap="round" stroke-linejoin="round"><path d="M5 12l5 5L20 7"/></svg></button>
       <div class="sh-main" data-act="sh-toggle" data-id="${esc(s.id)}"><b>${esc(s.name)}</b>${s.sources ? `<small>${esc(s.sources)}</small>` : ''}</div>
-      <div class="sh-qty"><button data-act="sh-dec" data-id="${esc(s.id)}" aria-label="Mniej">−</button><span class="q" data-act="sh-qty" data-id="${esc(s.id)}">${esc(qtyText(s)) || '—'}</span><button data-act="sh-inc" data-id="${esc(s.id)}" aria-label="Więcej">+</button></div>
+      <div class="sh-qty">${s.amount == null
+        ? `<button class="q-add" data-act="sh-qty" data-id="${esc(s.id)}">${s.unit ? esc(s.unit) : '+ ilość'}</button>`
+        : `<button data-act="sh-dec" data-id="${esc(s.id)}" aria-label="Mniej">−</button><span class="q" data-act="sh-qty" data-id="${esc(s.id)}">${esc(qtyText(s))}</span><button data-act="sh-inc" data-id="${esc(s.id)}" aria-label="Więcej">+</button>`}</div>
       <button class="del" data-act="sh-del" data-id="${esc(s.id)}" aria-label="Usuń">×</button>
     </li>`;
   let html = '';
@@ -2287,6 +2341,19 @@ Object.assign(ACTS, {
   'plan-today': () => { weekStart = mondayOf(new Date()); renderPlan(); },
   'plan-add': el => openPlanAdd({ day: el.dataset.day }),
   'plan-edit': el => openPlanAdd({ id: el.dataset.id }),
+  'plan-open': el => {
+    const p = plan.find(x => x.id === el.dataset.id); if (!p) return;
+    if (p.recipe_id && recipeById(p.recipe_id)) { openDetail(p.recipe_id); servings = p.servings || servings; renderDetail(); }
+    else openPlanAdd({ id: p.id });
+  },
+  'plan-day-shop': el => {
+    const d = el.dataset.day, meals = plan.filter(p => p.day === d);
+    addMealsToShop(meals, `${DAY_NAMES[fromYmd(d).getDay()]}`);
+  },
+  'plan-meal-shop': el => {
+    const p = plan.find(x => x.id === el.dataset.id); if (!p) return;
+    addMealsToShop([p], recipeById(p.recipe_id)?.title || 'Przepis');
+  },
   'plan-cook': el => { const p = plan.find(x => x.id === el.dataset.id); if (!p || !recipeById(p.recipe_id)) return;
     openDetail(p.recipe_id); servings = p.servings || servings; renderDetail(); startCooking(); },
   'plan-to-shop': () => { $('#shFrom').value = ymd(weekStart); $('#shTo').value = ymd(addDays(weekStart, 6)); setTab('shop'); updateGenInfo(); },
@@ -2318,7 +2385,62 @@ Object.assign(ACTS, {
   'sh-share': () => shareShop()
 });
 
+/* ---- dodawanie pojedynczych składników z widoku przepisu ---- */
+function ingShopItem(i){ const k = itemKey(i.name, unitLemma(i.unit)); return shop.find(s => !s.checked && itemKey(s.name, s.unit) === k); }
+function ingAddBtn(i, idx){
+  const on = !!ingShopItem(i);
+  return `<button class="ing-add ${on ? 'on' : ''}" data-act="ing-add" data-i="${idx}" aria-label="${on ? 'Na liście zakupów — kliknij, aby usunąć' : 'Dodaj do listy zakupów'}">${on ? '✓' : '+'}</button>`;
+}
+function addIngToShop(i){
+  const r = current, unit = unitLemma(i.unit), amount = roundAmt(scale(i.amount), unit);
+  const ex = ingShopItem(i);
+  let row;
+  if (ex) {
+    if (amount != null) ex.amount = roundAmt((ex.amount || 0) + amount, ex.unit);
+    ex.sources = [...new Set([...(ex.sources ? ex.sources.split(' · ') : []), r.title])].join(' · ');
+    row = shopRow(ex);
+  } else {
+    row = shopRow({ id: uid(), name: i.name, amount, unit, checked: false, sources: r.title, sort: Date.now() + shop.length });
+    shop.push(row);
+  }
+  saveShop(); queue({ t: 'up', tb: 'shopping_items', row });
+  return row;
+}
+function toggleIngShop(el){
+  const r = current; if (!r) return;
+  const i = r.ingredients[+el.dataset.i]; if (!i || i.header) return;
+  const ex = ingShopItem(i);
+  if (ex) {
+    const backup = { ...ex };
+    shop = shop.filter(s => s.id !== ex.id); saveShop(); queue({ t: 'del', tb: 'shopping_items', ids: [ex.id] });
+    toast(`Usunięto z listy: ${ex.name}`, 'Cofnij', () => {
+      shop.push(backup); saveShop(); queue({ t: 'up', tb: 'shopping_items', row: shopRow(backup) }); renderDetail(); renderShop();
+    });
+  } else {
+    const row = addIngToShop(i);
+    if (navigator.vibrate) navigator.vibrate(10);
+    toast(`🛒 Dodano: ${row.name}${qtyText(row) ? ' — ' + qtyText(row) : ''}`);
+  }
+  const on = !!ingShopItem(i);
+  el.classList.toggle('on', on); el.textContent = on ? '✓' : '+';
+  renderShop();
+}
+function addAllIngToShop(){
+  const r = current; if (!r) return;
+  const todo = r.ingredients.filter(i => !i.header && i.name && !ingShopItem(i));
+  if (!todo.length) { toast('Wszystkie składniki są już na liście'); return; }
+  todo.forEach(addIngToShop);
+  renderDetail(); renderShop();
+  toast(`🛒 Dodano ${todo.length} ${plural(todo.length, 'składnik', 'składniki', 'składników')} do listy zakupów`);
+}
+ACTS['ing-add'] = el => toggleIngShop(el);
+ACTS['ing-add-all'] = () => addAllIngToShop();
+
 function bindPlanShop(){
+  // iOS: po schowaniu klawiatury przywróć widok, żeby nic się nie przesunęło
+  document.addEventListener('focusout', () => setTimeout(() => {
+    if (window.scrollY || document.documentElement.scrollTop) window.scrollTo(0, 0);
+  }, 80));
   $('#paSearch').addEventListener('input', renderPickList);
   $('#shFrom').addEventListener('change', updateGenInfo);
   $('#shTo').addEventListener('change', updateGenInfo);
